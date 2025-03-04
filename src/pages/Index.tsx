@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ScheduleProvider } from '@/context/ScheduleContext';
 import DriverPanel from '@/components/DriverPanel';
 import ScheduleGrid from '@/components/ScheduleGrid';
@@ -20,6 +20,108 @@ const ScheduleManager: React.FC = () => {
   const handlePrint = () => {
     window.print();
   };
+
+  useEffect(() => {
+    // Add global styles for drag and drop
+    const style = document.createElement('style');
+    style.textContent = `
+      .driver-cell {
+        min-height: 40px;
+        transition: background-color 0.2s;
+        padding: 4px;
+      }
+      
+      .driver-cell.drop-target {
+        background-color: rgba(59, 130, 246, 0.1) !important;
+        box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.5) !important;
+      }
+      
+      .unassigned-stop {
+        background-color: white;
+        border: 1px solid #e5e7eb;
+        border-left: 3px solid #3b82f6;
+        border-radius: 0.375rem;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        transition: all 0.2s;
+      }
+      
+      .delivery-item {
+        border-radius: 0.375rem;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        transition: all 0.2s;
+      }
+      
+      .schedule-container {
+        width: 100%;
+      }
+      
+      .time-header, .driver-header {
+        padding: 0.5rem;
+        background-color: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
+        font-weight: 500;
+      }
+      
+      .time-header {
+        min-width: 80px;
+        text-align: center;
+      }
+      
+      .driver-header {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .driver-avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 500;
+      }
+      
+      .time-row {
+        display: flex;
+      }
+      
+      .time-label {
+        min-width: 80px;
+        padding: 0.5rem;
+        background-color: #f9fafb;
+        border-right: 1px solid #e5e7eb;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+      }
+      
+      .driver-cells {
+        display: flex;
+        flex: 1;
+      }
+      
+      .driver-cell {
+        flex: 1;
+        border-right: 1px solid #e5e7eb;
+        border-bottom: 1px solid #e5e7eb;
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   return (
     <div className="flex flex-col h-screen">

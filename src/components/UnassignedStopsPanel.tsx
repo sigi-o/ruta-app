@@ -116,8 +116,11 @@ const UnassignedStopsPanel: React.FC = () => {
     }, 100);
   };
 
-  const handleDragEnd = () => {
+  const handleDragEnd = (e: React.DragEvent) => {
     setDraggingStop(null);
+    // Check if drop was successful - if not, the stop remains in unassigned
+    const dropSuccess = e.dataTransfer.dropEffect === 'move';
+    console.log('Drop effect:', e.dataTransfer.dropEffect);
   };
 
   const getStopTypeIcon = (stopType: string) => {

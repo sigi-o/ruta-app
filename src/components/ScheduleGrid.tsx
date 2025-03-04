@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
@@ -70,27 +71,36 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
       if (stop) {
         if (stop.status === 'unassigned' || source === 'unassigned') {
           assignStop(stopId, driverId);
+          updateStop(stopId, { deliveryTime: timeSlot });
+          
           toast({
             title: "Stop Assigned",
             description: `${stop.businessName} assigned to ${scheduleDay.drivers.find(d => d.id === driverId)?.name}`,
           });
         } 
         
-        else if (stop.driverId !== driverId) {
-          unassignStop(stopId);
-          assignStop(stopId, driverId);
-          toast({
-            title: "Stop Reassigned",
-            description: `${stop.businessName} reassigned to ${scheduleDay.drivers.find(d => d.id === driverId)?.name}`,
-          });
-        }
-        
-        if (stop.deliveryTime !== timeSlot) {
-          updateStop(stopId, { deliveryTime: timeSlot });
-          toast({
-            title: "Time Updated",
-            description: `${stop.businessName} moved to ${timeSlot}`,
-          });
+        else if (stop.driverId !== driverId || stop.deliveryTime !== timeSlot) {
+          // If it's just changing time slot with the same driver
+          if (stop.driverId === driverId && stop.deliveryTime !== timeSlot) {
+            updateStop(stopId, { deliveryTime: timeSlot });
+            toast({
+              title: "Time Updated",
+              description: `${stop.businessName} moved to ${timeSlot}`,
+            });
+          } 
+          // If it's changing driver
+          else if (stop.driverId !== driverId) {
+            unassignStop(stopId);
+            assignStop(stopId, driverId);
+            // Update time slot as well if it's different
+            if (stop.deliveryTime !== timeSlot) {
+              updateStop(stopId, { deliveryTime: timeSlot });
+            }
+            toast({
+              title: "Stop Reassigned",
+              description: `${stop.businessName} reassigned to ${scheduleDay.drivers.find(d => d.id === driverId)?.name}`,
+            });
+          }
         }
       }
       
