@@ -1,22 +1,23 @@
 
-import React, { useState } from 'react';
-import { useSchedule } from '@/context/ScheduleContext';
+import React, { useState, useEffect } from 'react';
+import { useSchedule, editStopEventChannel } from '@/context/ScheduleContext';
 import { DeliveryStop } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { MapPin, Clock, Package, AlertCircle, Plus, Edit, Trash2, ShoppingBag, Shuffle, Phone } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { MapPin, Clock, Package, AlertCircle, Plus, Edit, Trash2, ShoppingBag, Shuffle, Phone, GripHorizontal } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 
 const UnassignedStopsPanel: React.FC = () => {
-  const { scheduleDay, addStop, updateStop, removeStop, autoAssignStops, isLoading } = useSchedule();
+  const { scheduleDay, addStop, updateStop, removeStop, autoAssignStops, isLoading, editStop } = useSchedule();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentStop, setCurrentStop] = useState<DeliveryStop | null>(null);
+  const [draggingStop, setDraggingStop] = useState<string | null>(null);
   const [newStop, setNewStop] = useState<Omit<DeliveryStop, 'id' | 'status'>>({
     businessName: '',
     address: '',
@@ -25,6 +26,22 @@ const UnassignedStopsPanel: React.FC = () => {
   });
 
   const unassignedStops = scheduleDay.stops.filter(stop => stop.status === 'unassigned');
+
+  useEffect(() => {
+    const handleEditStop = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        setCurrentStop(customEvent.detail);
+        setIsEditModalOpen(true);
+      }
+    };
+
+    editStopEventChannel.addEventListener('editStop', handleEditStop);
+    
+    return () => {
+      editStopEventChannel.removeEventListener('editStop', handleEditStop);
+    };
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -76,7 +93,31 @@ const UnassignedStopsPanel: React.FC = () => {
 
   const handleDragStart = (e: React.DragEvent, stop: DeliveryStop) => {
     e.dataTransfer.setData('stopId', stop.id);
+    e.dataTransfer.setData('source', 'unassigned');
     e.dataTransfer.effectAllowed = 'move';
+    setDraggingStop(stop.id);
+    
+    // Create a custom drag image to show while dragging
+    const dragImage = document.createElement('div');
+    dragImage.className = 'p-2 bg-blue-100 border border-blue-300 rounded shadow-sm';
+    dragImage.textContent = stop.businessName;
+    document.body.appendChild(dragImage);
+    
+    // Position the drag image off-screen
+    dragImage.style.position = 'absolute';
+    dragImage.style.top = '-1000px';
+    
+    // Set the drag image
+    e.dataTransfer.setDragImage(dragImage, 0, 0);
+    
+    // Clean up after a short delay
+    setTimeout(() => {
+      document.body.removeChild(dragImage);
+    }, 100);
+  };
+
+  const handleDragEnd = () => {
+    setDraggingStop(null);
   };
 
   const getStopTypeIcon = (stopType: string) => {
@@ -120,9 +161,10 @@ const UnassignedStopsPanel: React.FC = () => {
             {unassignedStops.map((stop) => (
               <div
                 key={stop.id}
-                className="unassigned-stop cursor-pointer"
+                className={`unassigned-stop cursor-grab ${draggingStop === stop.id ? 'opacity-50' : ''}`}
                 draggable
                 onDragStart={(e) => handleDragStart(e, stop)}
+                onDragEnd={handleDragEnd}
                 onClick={() => handleEditStop(stop)}
               >
                 <div className="flex justify-between items-start">
@@ -143,6 +185,12 @@ const UnassignedStopsPanel: React.FC = () => {
                     )}
                   </div>
                   <div className="flex items-center space-x-1">
+                    <div 
+                      className="h-7 w-7 flex items-center justify-center text-gray-400 cursor-grab"
+                      onMouseDown={(e) => e.stopPropagation()}
+                    >
+                      <GripHorizontal className="h-3.5 w-3.5" />
+                    </div>
                     <Button 
                       variant="ghost" 
                       size="icon" 
@@ -212,6 +260,9 @@ const UnassignedStopsPanel: React.FC = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-blue-600">Add New Stop</DialogTitle>
+            <DialogDescription>
+              Add a new stop to the schedule. Required fields are marked with an asterisk (*).
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
@@ -332,6 +383,9 @@ const UnassignedStopsPanel: React.FC = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-blue-600">Edit Stop</DialogTitle>
+            <DialogDescription>
+              Update the stop details. Required fields are marked with an asterisk (*).
+            </DialogDescription>
           </DialogHeader>
           {currentStop && (
             <div className="space-y-4 py-2">

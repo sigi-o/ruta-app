@@ -1,36 +1,76 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
 import { Card } from '@/components/ui/card';
-import { MapPin, Clock, AlertCircle, Package, ShoppingBag, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MapPin, Clock, AlertCircle, Package, ShoppingBag, ChevronLeft, ChevronRight, GripHorizontal } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { addDays, format, parseISO } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 interface ScheduleGridProps {
   selectedDate: string;
 }
 
 const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
-  const { scheduleDay, assignStop, unassignStop, updateStop } = useSchedule();
+  const { scheduleDay, assignStop, unassignStop, updateStop, editStop } = useSchedule();
   const [draggingStop, setDraggingStop] = useState<string | null>(null);
+  const { toast } = useToast();
 
   // Filter out unavailable drivers
   const availableDrivers = scheduleDay.drivers.filter(driver => driver.available !== false);
 
   const handleDragStart = (e: React.DragEvent, stopId: string) => {
     e.dataTransfer.setData('stopId', stopId);
+    e.dataTransfer.setData('source', 'schedule');
+    e.dataTransfer.effectAllowed = 'move';
     setDraggingStop(stopId);
+
+    // Create a custom drag image to show while dragging
+    const stop = scheduleDay.stops.find(s => s.id === stopId);
+    if (stop) {
+      const dragImage = document.createElement('div');
+      dragImage.className = 'p-2 bg-blue-100 border border-blue-300 rounded shadow-sm';
+      dragImage.textContent = stop.businessName;
+      document.body.appendChild(dragImage);
+      
+      // Position the drag image off-screen
+      dragImage.style.position = 'absolute';
+      dragImage.style.top = '-1000px';
+      
+      // Set the drag image
+      e.dataTransfer.setDragImage(dragImage, 0, 0);
+      
+      // Clean up after a short delay
+      setTimeout(() => {
+        document.body.removeChild(dragImage);
+      }, 100);
+    }
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    
+    // Add visual indicator for drop target
+    const target = e.currentTarget as HTMLElement;
+    target.classList.add('drop-target');
+  };
+  
+  const handleDragLeave = (e: React.DragEvent) => {
+    const target = e.currentTarget as HTMLElement;
+    target.classList.remove('drop-target');
   };
 
   const handleDrop = (e: React.DragEvent, driverId: string, timeSlot: string) => {
     e.preventDefault();
+    
+    // Remove visual indicator
+    const target = e.currentTarget as HTMLElement;
+    target.classList.remove('drop-target');
+    
     const stopId = e.dataTransfer.getData('stopId');
+    const source = e.dataTransfer.getData('source');
     
     if (stopId) {
       // Update the stop's driver and time
@@ -38,19 +78,31 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
       
       if (stop) {
         // If moving from unassigned to assigned
-        if (stop.status === 'unassigned') {
+        if (stop.status === 'unassigned' || source === 'unassigned') {
           assignStop(stopId, driverId);
+          toast({
+            title: "Stop Assigned",
+            description: `${stop.businessName} assigned to ${scheduleDay.drivers.find(d => d.id === driverId)?.name}`,
+          });
         } 
         
         // If already assigned and changing driver
         else if (stop.driverId !== driverId) {
           unassignStop(stopId);
           assignStop(stopId, driverId);
+          toast({
+            title: "Stop Reassigned",
+            description: `${stop.businessName} reassigned to ${scheduleDay.drivers.find(d => d.id === driverId)?.name}`,
+          });
         }
         
         // If time slot is changing
         if (stop.deliveryTime !== timeSlot) {
           updateStop(stopId, { deliveryTime: timeSlot });
+          toast({
+            title: "Time Updated",
+            description: `${stop.businessName} moved to ${timeSlot}`,
+          });
         }
       }
       
@@ -178,34 +230,32 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
                       key={`${driver.id}-${timeSlot.time}`}
                       className="driver-cell"
                       onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, driver.id, timeSlot.time)}
                     >
                       {stopsByDriverAndTime[driver.id][timeSlot.time]?.map(stop => (
                         <div
                           key={stop.id}
-                          className={`delivery-item ${draggingStop === stop.id ? 'dragging' : ''}`}
+                          className={`delivery-item cursor-grab ${draggingStop === stop.id ? 'opacity-50' : ''}`}
                           style={{ backgroundColor: `${driver.color}15`, borderLeft: `3px solid ${driver.color}` }}
                           draggable
                           onDragStart={(e) => handleDragStart(e, stop.id)}
                           onDragEnd={() => setDraggingStop(null)}
-                          onClick={() => {
-                            // Find the stop in the context and trigger edit mode
-                            const stopToEdit = scheduleDay.stops.find(s => s.id === stop.id);
-                            if (stopToEdit) {
-                              // We need to trigger the edit modal in the UnassignedStopsPanel
-                              // But since this is in a different component, we'll use a custom event
-                              const editEvent = new CustomEvent('editStop', { 
-                                detail: { stopId: stop.id } 
-                              });
-                              window.dispatchEvent(editEvent);
-                            }
-                          }}
+                          onClick={() => editStop(stop.id)}
                         >
                           <div className="flex justify-between items-start">
-                            <div className="font-medium text-gray-800">{stop.clientName}</div>
-                            <div className="flex items-center text-xs text-gray-500 ml-2">
-                              <Clock className="h-3 w-3 mr-1" />
-                              {stop.deliveryTime}
+                            <div className="font-medium text-gray-800">{stop.businessName || stop.clientName}</div>
+                            <div className="flex items-center text-xs gap-1">
+                              <div className="text-gray-500">
+                                <Clock className="h-3 w-3 inline mr-1" />
+                                {stop.deliveryTime}
+                              </div>
+                              <div 
+                                className="h-6 w-6 flex items-center justify-center text-gray-400 cursor-grab"
+                                onMouseDown={(e) => e.stopPropagation()}
+                              >
+                                <GripHorizontal className="h-3 w-3" />
+                              </div>
                             </div>
                           </div>
                           
@@ -238,6 +288,22 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
           </div>
         </div>
       </ScrollArea>
+
+      <style jsx global>{`
+        .drop-target {
+          background-color: rgba(59, 130, 246, 0.1);
+          box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.5);
+        }
+        
+        .delivery-item, .unassigned-stop {
+          transition: transform 0.1s, box-shadow 0.1s;
+        }
+        
+        .delivery-item:hover, .unassigned-stop:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+      `}</style>
     </div>
   );
 };
