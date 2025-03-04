@@ -62,14 +62,14 @@ const ScheduleManager: React.FC = () => {
           </Button>
           
           <Button
-            className="bg-white text-blue-600 hover:bg-blue-50"
+            className="bg-white text-blue-600 hover:bg-blue-50 font-semibold"
             onClick={saveSchedule}
           >
             <Save className="h-4 w-4 mr-2" /> Save
           </Button>
           
           <Button
-            className="bg-white text-blue-600 hover:bg-blue-50"
+            className="bg-white text-blue-600 hover:bg-blue-50 font-semibold"
             onClick={handlePrint}
           >
             <Printer className="h-4 w-4 mr-2" /> Print

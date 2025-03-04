@@ -214,10 +214,10 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             const driverId = driverIds[driverIndex];
             
             // Update the stop in the updatedStops array
-            const stopIndex = updatedStops.findIndex(s => s.id === stop.id);
-            if (stopIndex !== -1) {
-              updatedStops[stopIndex] = {
-                ...updatedStops[stopIndex],
+            const foundIndex = updatedStops.findIndex(s => s.id === stop.id);
+            if (foundIndex !== -1) {
+              updatedStops[foundIndex] = {
+                ...updatedStops[foundIndex],
                 driverId,
                 status: 'assigned' as const
               };
