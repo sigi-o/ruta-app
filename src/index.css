@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -90,16 +91,59 @@
   @apply backdrop-blur-sm bg-white/90 border border-white/20 shadow-sm;
 }
 
-.schedule-grid {
-  display: grid;
-  grid-template-columns: 80px repeat(auto-fill, minmax(200px, 1fr));
+/* Schedule Grid New Styles */
+.schedule-container {
+  width: 100%;
   border-top: 1px solid #eaeaea;
   border-left: 1px solid #eaeaea;
 }
 
-.time-slot {
-  min-height: 100px;
+.time-header {
+  @apply sticky left-0 bg-white text-xs font-medium text-gray-500 flex items-center justify-center;
+  min-width: 80px;
+  height: 56px;
+  border-right: 1px solid #eaeaea;
+  border-bottom: 1px solid #eaeaea;
+  z-index: 10;
+}
+
+.driver-header {
+  @apply flex items-center justify-center px-3 py-2 font-medium bg-white;
+  min-width: 200px;
+  height: 56px;
+  border-right: 1px solid #eaeaea;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.schedule-body {
   display: flex;
+  flex-direction: column;
+}
+
+.time-row {
+  display: flex;
+  min-height: 100px;
+}
+
+.time-label {
+  @apply sticky left-0 bg-white text-xs font-medium text-gray-500 flex items-center justify-center;
+  min-width: 80px;
+  height: 100%;
+  border-right: 1px solid #eaeaea;
+  border-bottom: 1px solid #eaeaea;
+  z-index: 5;
+}
+
+.driver-cells {
+  display: flex;
+  flex-grow: 1;
+}
+
+.driver-cell {
+  @apply p-2 bg-white hover:bg-blue-50/30 transition-colors;
+  min-width: 200px;
+  border-right: 1px solid #eaeaea;
+  border-bottom: 1px solid #eaeaea;
 }
 
 .delivery-item {
@@ -118,21 +162,6 @@
   transform: scale(1.02);
 }
 
-.time-label {
-  @apply sticky left-0 bg-white text-xs font-medium text-gray-500;
-  min-width: 80px;
-  z-index: 5;
-  border-right: 1px solid #eaeaea;
-  border-bottom: 1px solid #eaeaea;
-}
-
-.driver-column {
-  @apply p-2 bg-white hover:bg-blue-50/30 transition-colors;
-  min-width: 200px;
-  border-right: 1px solid #eaeaea;
-  border-bottom: 1px solid #eaeaea;
-}
-
 .unassigned-stop {
   @apply bg-white p-3 rounded-md shadow-sm border border-gray-200 mb-2;
   transition: all 0.2s ease;
@@ -142,6 +171,7 @@
   @apply shadow-md border-blue-300;
 }
 
+/* Scrollbar Styles */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -159,6 +189,7 @@
   @apply bg-blue-300;
 }
 
+/* Other UI Elements */
 .header-gradient {
   @apply bg-white text-blue-600 border-b border-blue-100;
 }
