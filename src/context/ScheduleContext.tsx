@@ -98,7 +98,6 @@ const editStopEventChannel = new EventTarget();
 export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [scheduleDay, setScheduleDay] = useState<ScheduleDay>(defaultScheduleDay);
   const [isLoading, setIsLoading] = useState(false);
-  const [stopToEdit, setStopToEdit] = useState<DeliveryStop | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {

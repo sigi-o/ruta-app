@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
@@ -69,7 +68,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
       const stop = scheduleDay.stops.find(s => s.id === stopId);
       
       if (stop) {
-        if (stop.status === 'unassigned' || source === 'unassigned') {
+        if (source === 'unassigned' || stop.status === 'unassigned') {
           assignStop(stopId, driverId);
           updateStop(stopId, { deliveryTime: timeSlot });
           
@@ -78,7 +77,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
             description: `${stop.businessName} assigned to ${scheduleDay.drivers.find(d => d.id === driverId)?.name}`,
           });
         } 
-        
         else if (stop.driverId !== driverId || stop.deliveryTime !== timeSlot) {
           // If it's just changing time slot with the same driver
           if (stop.driverId === driverId && stop.deliveryTime !== timeSlot) {
@@ -90,9 +88,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
           } 
           // If it's changing driver
           else if (stop.driverId !== driverId) {
-            unassignStop(stopId);
             assignStop(stopId, driverId);
-            // Update time slot as well if it's different
             if (stop.deliveryTime !== timeSlot) {
               updateStop(stopId, { deliveryTime: timeSlot });
             }

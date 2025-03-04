@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSchedule, editStopEventChannel } from '@/context/ScheduleContext';
 import { DeliveryStop } from '@/types';
@@ -97,30 +96,23 @@ const UnassignedStopsPanel: React.FC = () => {
     e.dataTransfer.effectAllowed = 'move';
     setDraggingStop(stop.id);
     
-    // Create a custom drag image to show while dragging
     const dragImage = document.createElement('div');
     dragImage.className = 'p-2 bg-blue-100 border border-blue-300 rounded shadow-sm';
     dragImage.textContent = stop.businessName;
     document.body.appendChild(dragImage);
     
-    // Position the drag image off-screen
     dragImage.style.position = 'absolute';
     dragImage.style.top = '-1000px';
     
-    // Set the drag image
     e.dataTransfer.setDragImage(dragImage, 0, 0);
     
-    // Clean up after a short delay
     setTimeout(() => {
       document.body.removeChild(dragImage);
     }, 100);
   };
 
-  const handleDragEnd = (e: React.DragEvent) => {
+  const handleDragEnd = () => {
     setDraggingStop(null);
-    // Check if drop was successful - if not, the stop remains in unassigned
-    const dropSuccess = e.dataTransfer.dropEffect === 'move';
-    console.log('Drop effect:', e.dataTransfer.dropEffect);
   };
 
   const getStopTypeIcon = (stopType: string) => {
@@ -258,7 +250,6 @@ const UnassignedStopsPanel: React.FC = () => {
         </Button>
       </div>
 
-      {/* Add Stop Modal */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
         <DialogContent>
           <DialogHeader>
@@ -381,7 +372,6 @@ const UnassignedStopsPanel: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Stop Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent>
           <DialogHeader>
