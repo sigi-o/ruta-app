@@ -78,7 +78,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
 
   return (
     <div className="h-full flex flex-col bg-gray-50 rounded-lg overflow-hidden">
-      <div className="p-3 header-gradient">
+      <div className="card-header">
         <h2 className="text-lg font-medium">Schedule View - {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h2>
       </div>
 
@@ -118,8 +118,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
               {scheduleDay.drivers.map(driver => (
                 <div
                   key={`${driver.id}-${timeSlot.time}`}
-                  className="border-b border-r p-2 bg-white/50 hover:bg-blue-50/30 transition-colors"
-                  style={{ minWidth: '200px' }}
+                  className="driver-column"
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, driver.id, timeSlot.time)}
                 >
@@ -147,7 +146,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
                       
                       <div className="flex justify-between items-center mt-2">
                         <div className="flex items-center">
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-800">
                             {getStopTypeIcon(stop.stopType)}
                             <span className="ml-1 capitalize">{stop.stopType}</span>
                           </span>

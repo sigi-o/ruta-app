@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { UploadCloud, AlertCircle, CheckCircle2 } from "lucide-react";
+import { UploadCloud, AlertCircle, CheckCircle2, FileCheck } from "lucide-react";
 import { useSchedule } from '@/context/ScheduleContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -109,7 +109,7 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
           <div className="flex items-center justify-center w-full">
             <label 
               htmlFor="csv-upload" 
-              className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 border-gray-300"
+              className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 border-blue-300"
             >
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
                 <UploadCloud className="w-8 h-8 mb-2 text-blue-500" />
@@ -147,21 +147,22 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
           )}
         </div>
 
-        <DialogFooter className="sm:justify-between">
+        <DialogFooter className="sm:justify-between flex-col sm:flex-row gap-3">
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose}>Cancel</Button>
             {file && !isVerified && (
               <Button 
                 onClick={verifyFile} 
                 disabled={!file || isLoading}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
               >
+                <FileCheck className="h-4 w-4 mr-2" />
                 {isLoading ? "Verifying..." : "Verify CSV"}
               </Button>
             )}
           </div>
           {isVerified && (
-            <Button onClick={handleImport} disabled={!isVerified} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={handleImport} disabled={!isVerified} className="bg-blue-600 hover:bg-blue-700 text-white">
               Import Data
             </Button>
           )}

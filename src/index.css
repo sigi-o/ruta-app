@@ -122,13 +122,18 @@
   z-index: 5;
 }
 
+.driver-column {
+  @apply border-b border-r p-2 bg-white/50 hover:bg-blue-50/30 transition-colors;
+  min-width: 200px;
+}
+
 .unassigned-stop {
   @apply bg-white p-3 rounded-md shadow-sm border border-gray-200 mb-2;
   transition: all 0.2s ease;
 }
 
 .unassigned-stop:hover {
-  @apply shadow-md border-gray-300;
+  @apply shadow-md border-blue-300;
 }
 
 ::-webkit-scrollbar {
@@ -141,11 +146,11 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded-full;
+  @apply bg-blue-200 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400;
+  @apply bg-blue-300;
 }
 
 .header-gradient {
@@ -154,6 +159,10 @@
 
 .driver-avatar {
   @apply flex items-center justify-center w-8 h-8 rounded-full text-white font-medium text-sm;
+}
+
+.card-header {
+  @apply p-3 bg-blue-600 text-white;
 }
 
 /* Animation Classes */
@@ -170,4 +179,13 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Button Styles */
+.action-button {
+  @apply inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors;
+}
+
+.secondary-button {
+  @apply inline-flex items-center justify-center gap-2 bg-white text-blue-600 border border-blue-200 px-4 py-2 rounded-md hover:bg-blue-50 transition-colors;
 }

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
-import { CalendarIcon, Download, Upload, Printer, Shuffle, Save } from 'lucide-react';
+import { CalendarIcon, Download, Upload, Printer, Save } from 'lucide-react';
 import { useSchedule } from '@/context/ScheduleContext';
 
 const ScheduleManager: React.FC = () => {
@@ -30,7 +30,7 @@ const ScheduleManager: React.FC = () => {
           <p className="text-white/80">Streamlined delivery scheduling</p>
         </div>
         
-        <div className="flex items-center space-x-3">
+        <div className="flex-1 flex justify-center">
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -41,7 +41,7 @@ const ScheduleManager: React.FC = () => {
                 {date ? format(date, "PPP") : <span>Pick a date</span>}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
+            <PopoverContent className="w-auto p-0" align="center">
               <Calendar
                 mode="single"
                 selected={date}
@@ -50,32 +50,30 @@ const ScheduleManager: React.FC = () => {
               />
             </PopoverContent>
           </Popover>
+        </div>
+        
+        <div className="flex items-center space-x-3">
+          <Button 
+            variant="ghost" 
+            className="text-white hover:bg-white/20 hover:text-white"
+            onClick={() => setIsImportModalOpen(true)}
+          >
+            <Upload className="h-4 w-4 mr-2" /> Import CSV
+          </Button>
           
-          <div className="flex gap-2">
-            <Button 
-              variant="ghost" 
-              className="text-white hover:bg-white/20 hover:text-white"
-              onClick={() => setIsImportModalOpen(true)}
-            >
-              <Upload className="h-4 w-4 mr-2" /> Import CSV
-            </Button>
-            
-            <Button 
-              variant="ghost" 
-              className="text-white hover:bg-white/20 hover:text-white"
-              onClick={saveSchedule}
-            >
-              <Save className="h-4 w-4 mr-2" /> Save
-            </Button>
-            
-            <Button 
-              variant="ghost" 
-              className="text-white hover:bg-white/20 hover:text-white"
-              onClick={handlePrint}
-            >
-              <Printer className="h-4 w-4 mr-2" /> Print
-            </Button>
-          </div>
+          <Button
+            className="bg-white text-blue-600 hover:bg-blue-50"
+            onClick={saveSchedule}
+          >
+            <Save className="h-4 w-4 mr-2" /> Save
+          </Button>
+          
+          <Button
+            className="bg-white text-blue-600 hover:bg-blue-50"
+            onClick={handlePrint}
+          >
+            <Printer className="h-4 w-4 mr-2" /> Print
+          </Button>
         </div>
       </header>
 
@@ -97,7 +95,13 @@ const ScheduleManager: React.FC = () => {
         </div>
       </div>
       
-      {/* Remove the bottom action bar */}
+      {/* Import Modal */}
+      {isImportModalOpen && (
+        <CsvImportModal 
+          isOpen={isImportModalOpen} 
+          onClose={() => setIsImportModalOpen(false)} 
+        />
+      )}
     </div>
   );
 };
