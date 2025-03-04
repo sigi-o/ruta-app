@@ -68,7 +68,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
       const stop = scheduleDay.stops.find(s => s.id === stopId);
       
       if (stop) {
-        if (source === 'unassigned' || stop.status === 'unassigned') {
+        if (source === 'unassigned') {
           assignStop(stopId, driverId);
           updateStop(stopId, { deliveryTime: timeSlot });
           
@@ -77,25 +77,23 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
             description: `${stop.businessName} assigned to ${scheduleDay.drivers.find(d => d.id === driverId)?.name}`,
           });
         } 
-        else if (stop.driverId !== driverId || stop.deliveryTime !== timeSlot) {
-          // If it's just changing time slot with the same driver
-          if (stop.driverId === driverId && stop.deliveryTime !== timeSlot) {
-            updateStop(stopId, { deliveryTime: timeSlot });
-            toast({
-              title: "Time Updated",
-              description: `${stop.businessName} moved to ${timeSlot}`,
-            });
-          } 
-          // If it's changing driver
-          else if (stop.driverId !== driverId) {
+        else if (source === 'schedule') {
+          if (stop.driverId !== driverId || stop.deliveryTime !== timeSlot) {
             assignStop(stopId, driverId);
+            
             if (stop.deliveryTime !== timeSlot) {
               updateStop(stopId, { deliveryTime: timeSlot });
+              
+              toast({
+                title: "Time Updated",
+                description: `${stop.businessName} moved to ${timeSlot}`,
+              });
+            } else {
+              toast({
+                title: "Stop Reassigned",
+                description: `${stop.businessName} reassigned to ${scheduleDay.drivers.find(d => d.id === driverId)?.name}`,
+              });
             }
-            toast({
-              title: "Stop Reassigned",
-              description: `${stop.businessName} reassigned to ${scheduleDay.drivers.find(d => d.id === driverId)?.name}`,
-            });
           }
         }
       }

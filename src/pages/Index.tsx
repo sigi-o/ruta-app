@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ScheduleProvider } from '@/context/ScheduleContext';
 import DriverPanel from '@/components/DriverPanel';
@@ -114,6 +113,14 @@ const ScheduleManager: React.FC = () => {
         flex: 1;
         border-right: 1px solid #e5e7eb;
         border-bottom: 1px solid #e5e7eb;
+      }
+      
+      .dragging {
+        opacity: 0.5;
+      }
+      
+      .hidden-stop {
+        display: none !important;
       }
     `;
     document.head.appendChild(style);
