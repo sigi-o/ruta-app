@@ -79,15 +79,16 @@ const UnassignedStopsPanel: React.FC = () => {
     <div className="h-full flex flex-col">
       <div className="p-3 header-gradient rounded-t-lg flex justify-between items-center">
         <h2 className="text-lg font-medium">Unassigned Stops</h2>
+      </div>
+      
+      <div className="border-b border-blue-100 p-2 bg-blue-50/30">
         <Button 
-          variant="outline" 
-          size="sm"
           onClick={autoAssignStops}
-          disabled={isLoading}
-          className="text-white border-white/30 hover:bg-white/20"
+          disabled={isLoading || unassignedStops.length === 0}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
         >
           <Shuffle className="h-3.5 w-3.5 mr-1.5" /> 
-          {isLoading ? 'Assigning...' : 'Auto-Assign'}
+          {isLoading ? 'Assigning...' : 'Auto-Assign All Stops'}
         </Button>
       </div>
       

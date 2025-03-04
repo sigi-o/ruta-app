@@ -145,22 +145,21 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
               )}
             </div>
           )}
+          
+          {file && !isVerified && (
+            <Button 
+              onClick={verifyFile} 
+              disabled={!file || isLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <FileCheck className="h-4 w-4 mr-2" />
+              {isLoading ? "Verifying..." : "Verify CSV"}
+            </Button>
+          )}
         </div>
 
         <DialogFooter className="sm:justify-between flex-col sm:flex-row gap-3">
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
-            {file && !isVerified && (
-              <Button 
-                onClick={verifyFile} 
-                disabled={!file || isLoading}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <FileCheck className="h-4 w-4 mr-2" />
-                {isLoading ? "Verifying..." : "Verify CSV"}
-              </Button>
-            )}
-          </div>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
           {isVerified && (
             <Button onClick={handleImport} disabled={!isVerified} className="bg-blue-600 hover:bg-blue-700 text-white">
               Import Data

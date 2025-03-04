@@ -24,10 +24,10 @@ const ScheduleManager: React.FC = () => {
   return (
     <div className="flex flex-col h-screen">
       {/* Header */}
-      <header className="bg-blue-600 p-4 text-white flex items-center justify-between print:hidden">
+      <header className="bg-white p-4 text-blue-600 flex items-center justify-between shadow-sm print:hidden">
         <div>
           <h1 className="text-2xl font-bold">Catering Flow Manager</h1>
-          <p className="text-white/80">Streamlined delivery scheduling</p>
+          <p className="text-blue-500/80">Streamlined delivery scheduling</p>
         </div>
         
         <div className="flex-1 flex justify-center">
@@ -35,7 +35,7 @@ const ScheduleManager: React.FC = () => {
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="w-[240px] justify-start text-left font-normal bg-white/10 hover:bg-white/20 border-white/20 text-white"
+                className="w-[240px] justify-start text-left font-normal border-blue-200 text-blue-600 hover:bg-blue-50/50"
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {date ? format(date, "PPP") : <span>Pick a date</span>}
@@ -55,21 +55,21 @@ const ScheduleManager: React.FC = () => {
         <div className="flex items-center space-x-3">
           <Button 
             variant="ghost" 
-            className="text-white hover:bg-white/20 hover:text-white"
+            className="text-blue-600 hover:bg-blue-50 hover:text-blue-700"
             onClick={() => setIsImportModalOpen(true)}
           >
             <Upload className="h-4 w-4 mr-2" /> Import CSV
           </Button>
           
           <Button
-            className="bg-white text-blue-600 hover:bg-blue-50 font-semibold"
+            className="bg-blue-600 text-white hover:bg-blue-700 font-semibold"
             onClick={saveSchedule}
           >
             <Save className="h-4 w-4 mr-2" /> Save
           </Button>
           
           <Button
-            className="bg-white text-blue-600 hover:bg-blue-50 font-semibold"
+            className="bg-blue-600 text-white hover:bg-blue-700 font-semibold"
             onClick={handlePrint}
           >
             <Printer className="h-4 w-4 mr-2" /> Print

@@ -123,7 +123,7 @@
 }
 
 .driver-column {
-  @apply border-b border-r p-2 bg-white/50 hover:bg-blue-50/30 transition-colors;
+  @apply border-b border-r p-2 bg-white hover:bg-blue-50/30 transition-colors;
   min-width: 200px;
 }
 
@@ -154,7 +154,7 @@
 }
 
 .header-gradient {
-  @apply bg-blue-600 text-white;
+  @apply bg-white text-blue-600 border-b border-blue-100;
 }
 
 .driver-avatar {
@@ -162,7 +162,7 @@
 }
 
 .card-header {
-  @apply p-2 bg-blue-600 text-white;
+  @apply p-2 bg-white text-blue-600 border-b border-blue-100;
 }
 
 /* Animation Classes */
@@ -189,9 +189,3 @@
 .secondary-button {
   @apply inline-flex items-center justify-center gap-2 bg-white text-blue-600 border border-blue-200 px-4 py-2 rounded-md hover:bg-blue-50 transition-colors;
 }
-
-/* Fix for hour markers - only show on left side */
-.time-slot:not(:first-child) .time-label {
-  @apply hidden;
-}
-
