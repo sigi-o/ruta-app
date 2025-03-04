@@ -77,7 +77,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
   const stopsByDriverAndTime = getStopsByDriverAndTime();
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 rounded-lg overflow-hidden">
+    <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
       <div className="card-header">
         <h2 className="text-lg font-medium">Schedule View - {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h2>
       </div>
@@ -85,7 +85,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
       <ScrollArea className="flex-grow">
         <div className="schedule-grid min-w-max">
           {/* Header Row with Driver Names */}
-          <div className="sticky top-0 z-10 bg-white">
+          <div className="sticky top-0 z-10">
             <div className="h-14 flex">
               <div className="time-label border-b border-r flex items-center justify-center">
                 Time
