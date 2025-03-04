@@ -34,7 +34,8 @@ const defaultDrivers: Driver[] = [
 const defaultStops: DeliveryStop[] = [
   {
     id: '1',
-    clientName: 'Acme Corporation',
+    businessName: 'Acme Corporation',
+    clientName: 'John Doe',
     address: '123 Business Ave',
     deliveryTime: '10:00',
     status: 'unassigned',
@@ -43,7 +44,8 @@ const defaultStops: DeliveryStop[] = [
   },
   {
     id: '2',
-    clientName: 'TechStart Inc',
+    businessName: 'TechStart Inc',
+    clientName: 'Jane Smith',
     address: '456 Innovation Blvd',
     deliveryTime: '11:30',
     status: 'unassigned',
@@ -52,7 +54,8 @@ const defaultStops: DeliveryStop[] = [
   },
   {
     id: '3',
-    clientName: 'Downtown Deli',
+    businessName: 'Downtown Deli',
+    clientName: 'Robert Johnson',
     address: '789 Main St',
     deliveryTime: '12:00',
     status: 'unassigned',
@@ -61,7 +64,7 @@ const defaultStops: DeliveryStop[] = [
   },
   {
     id: '4',
-    clientName: 'City Butcher',
+    businessName: 'City Butcher',
     address: '321 Meat Lane',
     deliveryTime: '08:30',
     status: 'unassigned',
@@ -71,7 +74,7 @@ const defaultStops: DeliveryStop[] = [
   },
   {
     id: '5',
-    clientName: 'Party Supply Co',
+    businessName: 'Party Supply Co',
     address: '555 Event Road',
     deliveryTime: '09:00',
     status: 'unassigned',
@@ -330,6 +333,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setTimeout(() => {
       const newStops: DeliveryStop[] = data.map((row, index) => ({
         id: `import-${Date.now()}-${index}`,
+        businessName: row.businessName || row.business_name || row.company || '',
         clientName: row.clientName || row.customer_name || row.client || '',
         address: row.address || row.delivery_address || row.location || '',
         deliveryTime: row.deliveryTime || row.delivery_time || row.time || '12:00',

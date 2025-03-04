@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { MapPin, Clock, Package, AlertCircle, Plus, Edit, Trash2, ShoppingBag, Shuffle } from 'lucide-react';
+import { MapPin, Clock, Package, AlertCircle, Plus, Edit, Trash2, ShoppingBag, Shuffle, Phone } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -18,7 +18,7 @@ const UnassignedStopsPanel: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentStop, setCurrentStop] = useState<DeliveryStop | null>(null);
   const [newStop, setNewStop] = useState<Omit<DeliveryStop, 'id' | 'status'>>({
-    clientName: '',
+    businessName: '',
     address: '',
     deliveryTime: '12:00',
     stopType: 'delivery',
@@ -46,7 +46,7 @@ const UnassignedStopsPanel: React.FC = () => {
   const handleAddStop = () => {
     addStop(newStop);
     setNewStop({
-      clientName: '',
+      businessName: '',
       address: '',
       deliveryTime: '12:00',
       stopType: 'delivery',
@@ -127,11 +127,20 @@ const UnassignedStopsPanel: React.FC = () => {
               >
                 <div className="flex justify-between items-start">
                   <div>
-                    <div className="font-medium">{stop.clientName}</div>
+                    <div className="font-medium">{stop.businessName}</div>
+                    {stop.clientName && (
+                      <div className="text-sm text-gray-600">{stop.clientName}</div>
+                    )}
                     <div className="flex items-center text-sm text-gray-600 mt-1">
                       <MapPin className="h-3.5 w-3.5 mr-1" />
                       {stop.address}
                     </div>
+                    {stop.contactPhone && (
+                      <div className="flex items-center text-sm text-gray-600 mt-1">
+                        <Phone className="h-3.5 w-3.5 mr-1" />
+                        {stop.contactPhone}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center space-x-1">
                     <Button 
@@ -206,33 +215,58 @@ const UnassignedStopsPanel: React.FC = () => {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="clientName">Client Name</Label>
+              <Label htmlFor="businessName">Business Name <span className="text-red-500">*</span></Label>
+              <Input
+                id="businessName"
+                name="businessName"
+                placeholder="Enter business name"
+                value={newStop.businessName}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="clientName">Client Name (Optional)</Label>
               <Input
                 id="clientName"
                 name="clientName"
                 placeholder="Enter client name"
-                value={newStop.clientName}
+                value={newStop.clientName || ''}
                 onChange={handleInputChange}
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
+              <Label htmlFor="address">Address <span className="text-red-500">*</span></Label>
               <Input
                 id="address"
                 name="address"
                 placeholder="Enter delivery address"
                 value={newStop.address}
                 onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="contactPhone">Phone Number (Optional)</Label>
+              <Input
+                id="contactPhone"
+                name="contactPhone"
+                placeholder="Enter contact phone number"
+                value={newStop.contactPhone || ''}
+                onChange={handleInputChange}
               />
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="deliveryTime">Delivery Time</Label>
+                <Label htmlFor="deliveryTime">Delivery Time <span className="text-red-500">*</span></Label>
                 <Select
                   value={newStop.deliveryTime}
                   onValueChange={(value) => handleSelectChange('deliveryTime', value)}
+                  required
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select time" />
@@ -248,10 +282,11 @@ const UnassignedStopsPanel: React.FC = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="stopType">Stop Type</Label>
+                <Label htmlFor="stopType">Stop Type <span className="text-red-500">*</span></Label>
                 <Select
                   value={newStop.stopType}
                   onValueChange={(value) => handleSelectChange('stopType', value)}
+                  required
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select type" />
@@ -283,7 +318,7 @@ const UnassignedStopsPanel: React.FC = () => {
             </Button>
             <Button 
               onClick={handleAddStop} 
-              disabled={!newStop.clientName || !newStop.address}
+              disabled={!newStop.businessName || !newStop.address || !newStop.deliveryTime || !newStop.stopType}
               className="bg-blue-600 hover:bg-blue-700"
             >
               Add Stop
@@ -301,33 +336,58 @@ const UnassignedStopsPanel: React.FC = () => {
           {currentStop && (
             <div className="space-y-4 py-2">
               <div className="space-y-2">
-                <Label htmlFor="clientName">Client Name</Label>
+                <Label htmlFor="businessName">Business Name <span className="text-red-500">*</span></Label>
+                <Input
+                  id="editBusinessName"
+                  name="businessName"
+                  placeholder="Enter business name"
+                  value={currentStop.businessName}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="clientName">Client Name (Optional)</Label>
                 <Input
                   id="editClientName"
                   name="clientName"
                   placeholder="Enter client name"
-                  value={currentStop.clientName}
+                  value={currentStop.clientName || ''}
                   onChange={handleInputChange}
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
+                <Label htmlFor="address">Address <span className="text-red-500">*</span></Label>
                 <Input
                   id="editAddress"
                   name="address"
                   placeholder="Enter delivery address"
                   value={currentStop.address}
                   onChange={handleInputChange}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="contactPhone">Phone Number (Optional)</Label>
+                <Input
+                  id="editContactPhone"
+                  name="contactPhone"
+                  placeholder="Enter contact phone number"
+                  value={currentStop.contactPhone || ''}
+                  onChange={handleInputChange}
                 />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="deliveryTime">Delivery Time</Label>
+                  <Label htmlFor="deliveryTime">Delivery Time <span className="text-red-500">*</span></Label>
                   <Select
                     value={currentStop.deliveryTime}
                     onValueChange={(value) => handleSelectChange('deliveryTime', value)}
+                    required
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select time" />
@@ -343,10 +403,11 @@ const UnassignedStopsPanel: React.FC = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="stopType">Stop Type</Label>
+                  <Label htmlFor="stopType">Stop Type <span className="text-red-500">*</span></Label>
                   <Select
                     value={currentStop.stopType}
                     onValueChange={(value) => handleSelectChange('stopType', value)}
+                    required
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select type" />
@@ -379,7 +440,7 @@ const UnassignedStopsPanel: React.FC = () => {
             </Button>
             <Button 
               onClick={handleUpdateStop} 
-              disabled={!currentStop?.clientName || !currentStop?.address}
+              disabled={!currentStop?.businessName || !currentStop?.address || !currentStop?.deliveryTime || !currentStop?.stopType}
               className="bg-blue-600 hover:bg-blue-700"
             >
               Update Stop

@@ -11,7 +11,8 @@ export interface Driver {
 
 export interface DeliveryStop {
   id: string;
-  clientName: string;
+  businessName: string;  // New required field
+  clientName?: string;   // Now optional
   address: string;
   deliveryTime: string; // format: 'HH:MM'
   specialInstructions?: string;
