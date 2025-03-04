@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
 import { CalendarIcon, Download, Upload, Printer, Shuffle, Save } from 'lucide-react';
 import { useSchedule } from '@/context/ScheduleContext';
 
@@ -25,7 +24,7 @@ const ScheduleManager: React.FC = () => {
   return (
     <div className="flex flex-col h-screen">
       {/* Header */}
-      <header className="bg-gradient-primary p-4 text-white flex items-center justify-between print:hidden">
+      <header className="bg-blue-600 p-4 text-white flex items-center justify-between print:hidden">
         <div>
           <h1 className="text-2xl font-bold">Catering Flow Manager</h1>
           <p className="text-white/80">Streamlined delivery scheduling</p>
@@ -98,29 +97,7 @@ const ScheduleManager: React.FC = () => {
         </div>
       </div>
       
-      {/* Bottom Action Bar */}
-      <div className="px-4 py-3 border-t flex justify-between items-center bg-gray-50 print:hidden">
-        <div className="text-sm text-gray-500">
-          Drag and drop stops between drivers and time slots
-        </div>
-        
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={autoAssignStops}
-            disabled={isLoading}
-          >
-            <Shuffle className="h-4 w-4 mr-2" /> 
-            {isLoading ? 'Auto-Assigning...' : 'Auto-Assign Stops'}
-          </Button>
-        </div>
-      </div>
-      
-      {/* CSV Import Modal */}
-      <CsvImportModal 
-        isOpen={isImportModalOpen}
-        onClose={() => setIsImportModalOpen(false)}
-      />
+      {/* Remove the bottom action bar */}
     </div>
   );
 };

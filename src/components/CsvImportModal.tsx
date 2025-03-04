@@ -99,7 +99,7 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Import Stops from CSV</DialogTitle>
+          <DialogTitle className="text-blue-600">Import Stops from CSV</DialogTitle>
           <DialogDescription>
             Upload a CSV file containing delivery information to import into the schedule.
           </DialogDescription>
@@ -112,7 +112,7 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
               className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 border-gray-300"
             >
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <UploadCloud className="w-8 h-8 mb-2 text-gray-500" />
+                <UploadCloud className="w-8 h-8 mb-2 text-blue-500" />
                 <p className="mb-2 text-sm text-gray-500">
                   <span className="font-semibold">Click to upload</span> or drag and drop
                 </p>
@@ -132,7 +132,7 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
             <div className="p-3 bg-blue-50 rounded-md text-sm">
               <div className="flex items-center">
                 {isVerified ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />
+                  <CheckCircle2 className="h-4 w-4 text-blue-500 mr-2" />
                 ) : (
                   <AlertCircle className="h-4 w-4 text-blue-500 mr-2" />
                 )}
@@ -154,13 +154,14 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
               <Button 
                 onClick={verifyFile} 
                 disabled={!file || isLoading}
+                className="bg-blue-600 hover:bg-blue-700"
               >
-                {isLoading ? "Verifying..." : "Verify File"}
+                {isLoading ? "Verifying..." : "Verify CSV"}
               </Button>
             )}
           </div>
           {isVerified && (
-            <Button onClick={handleImport} disabled={!isVerified}>
+            <Button onClick={handleImport} disabled={!isVerified} className="bg-blue-600 hover:bg-blue-700">
               Import Data
             </Button>
           )}

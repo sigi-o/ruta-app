@@ -78,7 +78,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
 
   return (
     <div className="h-full flex flex-col bg-gray-50 rounded-lg overflow-hidden">
-      <div className="p-4 header-gradient">
+      <div className="p-3 header-gradient">
         <h2 className="text-lg font-medium">Schedule View - {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h2>
       </div>
 
@@ -154,7 +154,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
                         </div>
                         
                         {stop.specialInstructions && (
-                          <div className="text-amber-500" title={stop.specialInstructions}>
+                          <div className="text-blue-500" title={stop.specialInstructions}>
                             <AlertCircle className="h-3 w-3" />
                           </div>
                         )}

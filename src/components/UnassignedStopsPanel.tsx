@@ -8,12 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { MapPin, Clock, Package, AlertCircle, Plus, Edit, Trash2, ShoppingBag, Utensils } from 'lucide-react';
+import { MapPin, Clock, Package, AlertCircle, Plus, Edit, Trash2, ShoppingBag, Utensils, Shuffle } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 
 const UnassignedStopsPanel: React.FC = () => {
-  const { scheduleDay, addStop, updateStop, removeStop } = useSchedule();
+  const { scheduleDay, addStop, updateStop, removeStop, autoAssignStops, isLoading } = useSchedule();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentStop, setCurrentStop] = useState<DeliveryStop | null>(null);
@@ -77,8 +77,18 @@ const UnassignedStopsPanel: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="p-4 header-gradient rounded-t-lg">
+      <div className="p-3 header-gradient rounded-t-lg flex justify-between items-center">
         <h2 className="text-lg font-medium">Unassigned Stops</h2>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={autoAssignStops}
+          disabled={isLoading}
+          className="text-white border-white/30 hover:bg-white/20"
+        >
+          <Shuffle className="h-3.5 w-3.5 mr-1.5" /> 
+          {isLoading ? 'Assigning...' : 'Auto-Assign'}
+        </Button>
       </div>
       
       <ScrollArea className="flex-grow px-4 py-2">
@@ -135,9 +145,9 @@ const UnassignedStopsPanel: React.FC = () => {
                     <span 
                       className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                         stop.stopType === 'delivery' ? 'bg-blue-100 text-blue-800' :
-                        stop.stopType === 'pickup' ? 'bg-purple-100 text-purple-800' :
+                        stop.stopType === 'pickup' ? 'bg-indigo-100 text-indigo-800' :
                         stop.stopType === 'butcher' ? 'bg-red-100 text-red-800' : 
-                        'bg-amber-100 text-amber-800'
+                        'bg-gray-100 text-gray-800'
                       }`}
                     >
                       {stop.stopType === 'delivery' && <Package className="h-3 w-3 mr-1" />}
@@ -150,7 +160,7 @@ const UnassignedStopsPanel: React.FC = () => {
                 </div>
                 
                 {stop.specialInstructions && (
-                  <div className="mt-2 p-2 bg-amber-50 rounded-sm text-xs text-amber-800 flex items-start">
+                  <div className="mt-2 p-2 bg-blue-50 rounded-sm text-xs text-blue-800 flex items-start">
                     <AlertCircle className="h-3.5 w-3.5 mr-1 mt-0.5 flex-shrink-0" />
                     <span>{stop.specialInstructions}</span>
                   </div>
@@ -163,7 +173,7 @@ const UnassignedStopsPanel: React.FC = () => {
       
       <div className="p-4 mt-auto border-t">
         <Button
-          className="w-full"
+          className="w-full bg-blue-600 hover:bg-blue-700"
           variant="default"
           onClick={() => setIsAddModalOpen(true)}
         >
@@ -175,7 +185,7 @@ const UnassignedStopsPanel: React.FC = () => {
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New Stop</DialogTitle>
+            <DialogTitle className="text-blue-600">Add New Stop</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
@@ -255,7 +265,11 @@ const UnassignedStopsPanel: React.FC = () => {
             <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddStop} disabled={!newStop.clientName || !newStop.address}>
+            <Button 
+              onClick={handleAddStop} 
+              disabled={!newStop.clientName || !newStop.address}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
               Add Stop
             </Button>
           </DialogFooter>
@@ -266,7 +280,7 @@ const UnassignedStopsPanel: React.FC = () => {
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Stop</DialogTitle>
+            <DialogTitle className="text-blue-600">Edit Stop</DialogTitle>
           </DialogHeader>
           {currentStop && (
             <div className="space-y-4 py-2">
@@ -348,7 +362,11 @@ const UnassignedStopsPanel: React.FC = () => {
             <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleUpdateStop} disabled={!currentStop?.clientName || !currentStop?.address}>
+            <Button 
+              onClick={handleUpdateStop} 
+              disabled={!currentStop?.clientName || !currentStop?.address}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
               Update Stop
             </Button>
           </DialogFooter>
