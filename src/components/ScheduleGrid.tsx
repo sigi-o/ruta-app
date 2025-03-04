@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
@@ -51,7 +50,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
     }
   };
 
-  // Group stops by driver and time
   const getStopsByDriverAndTime = () => {
     const result: Record<string, Record<string, DeliveryStop[]>> = {};
     
@@ -87,7 +85,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
           {/* Header Row with Driver Names */}
           <div className="sticky top-0 z-10">
             <div className="h-14 flex">
-              <div className="time-label border-b border-r flex items-center justify-center">
+              <div className="time-label border-b flex items-center justify-center">
                 Time
               </div>
               {scheduleDay.drivers.map(driver => (
@@ -111,7 +109,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
           {/* Time Slots and Stops */}
           {scheduleDay.timeSlots.map(timeSlot => (
             <div key={timeSlot.time} className="flex time-slot">
-              <div className="time-label border-r flex items-center justify-center">
+              <div className="time-label flex items-center justify-center">
                 {timeSlot.label}
               </div>
               
