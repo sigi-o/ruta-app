@@ -1,3 +1,4 @@
+
 export interface Driver {
   id: string;
   name: string;
@@ -20,7 +21,7 @@ export interface DeliveryStop {
   contactPhone?: string;
   items?: string[];
   estimatedDuration?: number; // in minutes
-  stopType: 'delivery' | 'pickup' | 'butcher' | 'equipment';
+  stopType: 'delivery' | 'pickup' | 'other';
 }
 
 export interface TimeSlot {

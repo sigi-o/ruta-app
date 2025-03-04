@@ -18,6 +18,7 @@ interface ScheduleContextType {
   loadSavedSchedule: () => void;
   importCsvData: (data: any[]) => void;
   isLoading: boolean;
+  editStop: (stopId: string) => void;
 }
 
 const defaultTimeSlots = generateTimeSlots('07:00', '19:00', 30);
@@ -65,7 +66,7 @@ const defaultStops: DeliveryStop[] = [
     deliveryTime: '08:30',
     status: 'unassigned',
     orderNumber: 'ORD-004',
-    stopType: 'butcher',
+    stopType: 'other',
     specialInstructions: 'Pick up catering meat order'
   },
   {
@@ -75,7 +76,7 @@ const defaultStops: DeliveryStop[] = [
     deliveryTime: '09:00',
     status: 'unassigned',
     orderNumber: 'ORD-005',
-    stopType: 'equipment',
+    stopType: 'other',
     specialInstructions: 'Pick up 10 chafing dishes and 5 coffee urns'
   }
 ];
@@ -89,14 +90,33 @@ const defaultScheduleDay: ScheduleDay = {
 
 export const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined);
 
+const editStopEventChannel = new EventTarget();
+
 export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [scheduleDay, setScheduleDay] = useState<ScheduleDay>(defaultScheduleDay);
   const [isLoading, setIsLoading] = useState(false);
+  const [stopToEdit, setStopToEdit] = useState<DeliveryStop | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     loadSavedSchedule();
-  }, []);
+    
+    const handleEditStopEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail && customEvent.detail.stopId) {
+        const stop = scheduleDay.stops.find(s => s.id === customEvent.detail.stopId);
+        if (stop) {
+          editStopEventChannel.dispatchEvent(new CustomEvent('editStop', { detail: stop }));
+        }
+      }
+    };
+    
+    window.addEventListener('editStop', handleEditStopEvent);
+    
+    return () => {
+      window.removeEventListener('editStop', handleEditStopEvent);
+    };
+  }, [scheduleDay.stops]);
 
   const addDriver = (driver: Omit<Driver, 'id'>) => {
     const newDriver: Driver = {
@@ -117,7 +137,6 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const removeDriver = (driverId: string) => {
-    // Unassign all stops assigned to this driver
     setScheduleDay(prev => {
       const updatedStops = prev.stops.map(stop => 
         stop.driverId === driverId ? { ...stop, driverId: undefined, status: 'unassigned' as const } : stop
@@ -137,7 +156,6 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const updateDriver = (driverId: string, updatedDriver: Partial<Driver>) => {
-    // If driver is marked as unavailable, unassign their stops
     setScheduleDay(prev => {
       let updatedStops = [...prev.stops];
       
@@ -217,12 +235,10 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const autoAssignStops = () => {
     setIsLoading(true);
 
-    // Simple auto-assignment algorithm based on time slots, but filter out unavailable drivers
     setTimeout(() => {
       setScheduleDay(prev => {
         const unassignedStops = [...prev.stops.filter(stop => stop.status === 'unassigned')];
         
-        // Group stops by delivery time
         const stopsByTime: Record<string, DeliveryStop[]> = {};
         
         unassignedStops.forEach(stop => {
@@ -232,7 +248,6 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           stopsByTime[stop.deliveryTime].push(stop);
         });
         
-        // Get only available drivers
         const availableDriverIds = prev.drivers
           .filter(d => d.available !== false)
           .map(d => d.id);
@@ -247,18 +262,15 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           return prev;
         }
         
-        // Distribute stops to drivers based on delivery times
         const updatedStops = [...prev.stops];
         
         Object.keys(stopsByTime).sort().forEach((time, timeIndex) => {
           const stopsForTime = stopsByTime[time];
           
           stopsForTime.forEach((stop, index) => {
-            // Assign driver in round-robin fashion
             const driverIndex = (timeIndex + index) % availableDriverIds.length;
             const driverId = availableDriverIds[driverIndex];
             
-            // Update the stop in the updatedStops array
             const foundIndex = updatedStops.findIndex(s => s.id === stop.id);
             if (foundIndex !== -1) {
               updatedStops[foundIndex] = {
@@ -281,7 +293,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         title: "Auto-Assignment Complete",
         description: "Stops have been automatically assigned to available drivers based on delivery times.",
       });
-    }, 800); // Simulate processing time
+    }, 800);
   };
 
   const saveSchedule = () => {
@@ -315,7 +327,6 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const importCsvData = (data: any[]) => {
     setIsLoading(true);
     
-    // Process the CSV data
     setTimeout(() => {
       const newStops: DeliveryStop[] = data.map((row, index) => ({
         id: `import-${Date.now()}-${index}`,
@@ -343,6 +354,13 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }, 1000);
   };
 
+  const editStop = (stopId: string) => {
+    const stop = scheduleDay.stops.find(s => s.id === stopId);
+    if (stop) {
+      editStopEventChannel.dispatchEvent(new CustomEvent('editStop', { detail: stop }));
+    }
+  };
+
   return (
     <ScheduleContext.Provider value={{
       scheduleDay,
@@ -358,7 +376,8 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       saveSchedule,
       loadSavedSchedule,
       importCsvData,
-      isLoading
+      isLoading,
+      editStop
     }}>
       {children}
     </ScheduleContext.Provider>
@@ -372,3 +391,5 @@ export const useSchedule = () => {
   }
   return context;
 };
+
+export { editStopEventChannel };

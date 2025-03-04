@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
 import { Card } from '@/components/ui/card';
-import { MapPin, Clock, AlertCircle, Package, ShoppingBag, Utensils, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MapPin, Clock, AlertCircle, Package, ShoppingBag, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { addDays, format, parseISO } from 'date-fns';
 
@@ -12,30 +12,48 @@ interface ScheduleGridProps {
 }
 
 const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
-  const { scheduleDay, assignStop, unassignStop } = useSchedule();
+  const { scheduleDay, assignStop, unassignStop, updateStop } = useSchedule();
   const [draggingStop, setDraggingStop] = useState<string | null>(null);
 
   // Filter out unavailable drivers
   const availableDrivers = scheduleDay.drivers.filter(driver => driver.available !== false);
 
-  const handleDragStart = (stopId: string) => {
+  const handleDragStart = (e: React.DragEvent, stopId: string) => {
+    e.dataTransfer.setData('stopId', stopId);
     setDraggingStop(stopId);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
   };
 
   const handleDrop = (e: React.DragEvent, driverId: string, timeSlot: string) => {
     e.preventDefault();
-    if (draggingStop) {
-      assignStop(draggingStop, driverId);
-      // Update the time if it's different
-      const stop = scheduleDay.stops.find(s => s.id === draggingStop);
-      if (stop && stop.deliveryTime !== timeSlot) {
-        // In a real app, you would update the stop's delivery time here
-        console.log(`Update stop ${draggingStop} time from ${stop.deliveryTime} to ${timeSlot}`);
+    const stopId = e.dataTransfer.getData('stopId');
+    
+    if (stopId) {
+      // Update the stop's driver and time
+      const stop = scheduleDay.stops.find(s => s.id === stopId);
+      
+      if (stop) {
+        // If moving from unassigned to assigned
+        if (stop.status === 'unassigned') {
+          assignStop(stopId, driverId);
+        } 
+        
+        // If already assigned and changing driver
+        else if (stop.driverId !== driverId) {
+          unassignStop(stopId);
+          assignStop(stopId, driverId);
+        }
+        
+        // If time slot is changing
+        if (stop.deliveryTime !== timeSlot) {
+          updateStop(stopId, { deliveryTime: timeSlot });
+        }
       }
+      
       setDraggingStop(null);
     }
   };
@@ -46,10 +64,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
         return <Package className="h-3 w-3" />;
       case 'pickup':
         return <ShoppingBag className="h-3 w-3" />;
-      case 'butcher':
-        return <Utensils className="h-3 w-3" />;
-      case 'equipment':
-        return <Package className="h-3 w-3" />;
+      case 'other':
       default:
         return <Package className="h-3 w-3" />;
     }
@@ -171,8 +186,20 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
                           className={`delivery-item ${draggingStop === stop.id ? 'dragging' : ''}`}
                           style={{ backgroundColor: `${driver.color}15`, borderLeft: `3px solid ${driver.color}` }}
                           draggable
-                          onDragStart={() => handleDragStart(stop.id)}
+                          onDragStart={(e) => handleDragStart(e, stop.id)}
                           onDragEnd={() => setDraggingStop(null)}
+                          onClick={() => {
+                            // Find the stop in the context and trigger edit mode
+                            const stopToEdit = scheduleDay.stops.find(s => s.id === stop.id);
+                            if (stopToEdit) {
+                              // We need to trigger the edit modal in the UnassignedStopsPanel
+                              // But since this is in a different component, we'll use a custom event
+                              const editEvent = new CustomEvent('editStop', { 
+                                detail: { stopId: stop.id } 
+                              });
+                              window.dispatchEvent(editEvent);
+                            }
+                          }}
                         >
                           <div className="flex justify-between items-start">
                             <div className="font-medium text-gray-800">{stop.clientName}</div>

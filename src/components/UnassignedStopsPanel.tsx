@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { MapPin, Clock, Package, AlertCircle, Plus, Edit, Trash2, ShoppingBag, Utensils, Shuffle } from 'lucide-react';
+import { MapPin, Clock, Package, AlertCircle, Plus, Edit, Trash2, ShoppingBag, Shuffle } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -67,12 +67,28 @@ const UnassignedStopsPanel: React.FC = () => {
     }
   };
 
-  const handleDeleteStop = (stopId: string) => {
+  const handleDeleteStop = (stopId: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
     removeStop(stopId);
   };
 
   const handleDragStart = (e: React.DragEvent, stop: DeliveryStop) => {
-    e.dataTransfer.setData('text/plain', stop.id);
+    e.dataTransfer.setData('stopId', stop.id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const getStopTypeIcon = (stopType: string) => {
+    switch (stopType) {
+      case 'delivery':
+        return <Package className="h-3 w-3 mr-1" />;
+      case 'pickup':
+        return <ShoppingBag className="h-3 w-3 mr-1" />;
+      case 'other':
+      default:
+        return <Package className="h-3 w-3 mr-1" />;
+    }
   };
 
   return (
@@ -104,9 +120,10 @@ const UnassignedStopsPanel: React.FC = () => {
             {unassignedStops.map((stop) => (
               <div
                 key={stop.id}
-                className="unassigned-stop"
+                className="unassigned-stop cursor-pointer"
                 draggable
                 onDragStart={(e) => handleDragStart(e, stop)}
+                onClick={() => handleEditStop(stop)}
               >
                 <div className="flex justify-between items-start">
                   <div>
@@ -121,7 +138,10 @@ const UnassignedStopsPanel: React.FC = () => {
                       variant="ghost" 
                       size="icon" 
                       className="h-7 w-7"
-                      onClick={() => handleEditStop(stop)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditStop(stop);
+                      }}
                     >
                       <Edit className="h-3.5 w-3.5" />
                     </Button>
@@ -129,7 +149,7 @@ const UnassignedStopsPanel: React.FC = () => {
                       variant="ghost" 
                       size="icon" 
                       className="h-7 w-7 text-red-500"
-                      onClick={() => handleDeleteStop(stop.id)}
+                      onClick={(e) => handleDeleteStop(stop.id, e)}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -147,14 +167,10 @@ const UnassignedStopsPanel: React.FC = () => {
                       className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                         stop.stopType === 'delivery' ? 'bg-blue-100 text-blue-800' :
                         stop.stopType === 'pickup' ? 'bg-indigo-100 text-indigo-800' :
-                        stop.stopType === 'butcher' ? 'bg-red-100 text-red-800' : 
                         'bg-gray-100 text-gray-800'
                       }`}
                     >
-                      {stop.stopType === 'delivery' && <Package className="h-3 w-3 mr-1" />}
-                      {stop.stopType === 'pickup' && <ShoppingBag className="h-3 w-3 mr-1" />}
-                      {stop.stopType === 'butcher' && <Utensils className="h-3 w-3 mr-1" />}
-                      {stop.stopType === 'equipment' && <Package className="h-3 w-3 mr-1" />}
+                      {getStopTypeIcon(stop.stopType)}
                       <span className="capitalize">{stop.stopType}</span>
                     </span>
                   </div>
@@ -243,8 +259,7 @@ const UnassignedStopsPanel: React.FC = () => {
                   <SelectContent>
                     <SelectItem value="delivery">Delivery</SelectItem>
                     <SelectItem value="pickup">Pickup</SelectItem>
-                    <SelectItem value="butcher">Butcher</SelectItem>
-                    <SelectItem value="equipment">Equipment</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -339,8 +354,7 @@ const UnassignedStopsPanel: React.FC = () => {
                     <SelectContent>
                       <SelectItem value="delivery">Delivery</SelectItem>
                       <SelectItem value="pickup">Pickup</SelectItem>
-                      <SelectItem value="butcher">Butcher</SelectItem>
-                      <SelectItem value="equipment">Equipment</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
