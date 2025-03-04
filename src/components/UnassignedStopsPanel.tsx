@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSchedule, editStopEventChannel } from '@/context/ScheduleContext';
 import { DeliveryStop } from '@/types';
@@ -24,6 +25,7 @@ const UnassignedStopsPanel: React.FC = () => {
     stopType: 'delivery',
   });
 
+  // Only get stops that are explicitly unassigned
   const unassignedStops = scheduleDay.stops.filter(stop => stop.status === 'unassigned');
 
   useEffect(() => {
@@ -91,11 +93,13 @@ const UnassignedStopsPanel: React.FC = () => {
   };
 
   const handleDragStart = (e: React.DragEvent, stop: DeliveryStop) => {
+    // Set data that will be needed on drop
     e.dataTransfer.setData('stopId', stop.id);
     e.dataTransfer.setData('source', 'unassigned');
     e.dataTransfer.effectAllowed = 'move';
     setDraggingStop(stop.id);
     
+    // Create a custom drag image
     const dragImage = document.createElement('div');
     dragImage.className = 'p-2 bg-blue-100 border border-blue-300 rounded shadow-sm';
     dragImage.textContent = stop.businessName;

@@ -64,42 +64,48 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
     const stopId = e.dataTransfer.getData('stopId');
     const source = e.dataTransfer.getData('source');
     
-    if (stopId) {
-      const stop = scheduleDay.stops.find(s => s.id === stopId);
+    if (!stopId) return;
+    
+    const stop = scheduleDay.stops.find(s => s.id === stopId);
+    if (!stop) return;
+    
+    if (source === 'unassigned') {
+      assignStop(stopId, driverId);
+      updateStop(stopId, { 
+        deliveryTime: timeSlot,
+        status: 'assigned'
+      });
       
-      if (stop) {
-        if (source === 'unassigned') {
+      toast({
+        title: "Stop Assigned",
+        description: `${stop.businessName} assigned to ${scheduleDay.drivers.find(d => d.id === driverId)?.name}`,
+      });
+    } 
+    else if (source === 'schedule') {
+      if (stop.driverId !== driverId || stop.deliveryTime !== timeSlot) {
+        if (stop.driverId !== driverId) {
           assignStop(stopId, driverId);
-          updateStop(stopId, { deliveryTime: timeSlot });
+        }
+        
+        if (stop.deliveryTime !== timeSlot) {
+          updateStop(stopId, { 
+            deliveryTime: timeSlot
+          });
           
           toast({
-            title: "Stop Assigned",
-            description: `${stop.businessName} assigned to ${scheduleDay.drivers.find(d => d.id === driverId)?.name}`,
+            title: "Time Updated",
+            description: `${stop.businessName} moved to ${timeSlot}`,
           });
-        } 
-        else if (source === 'schedule') {
-          if (stop.driverId !== driverId || stop.deliveryTime !== timeSlot) {
-            assignStop(stopId, driverId);
-            
-            if (stop.deliveryTime !== timeSlot) {
-              updateStop(stopId, { deliveryTime: timeSlot });
-              
-              toast({
-                title: "Time Updated",
-                description: `${stop.businessName} moved to ${timeSlot}`,
-              });
-            } else {
-              toast({
-                title: "Stop Reassigned",
-                description: `${stop.businessName} reassigned to ${scheduleDay.drivers.find(d => d.id === driverId)?.name}`,
-              });
-            }
-          }
+        } else {
+          toast({
+            title: "Stop Reassigned",
+            description: `${stop.businessName} reassigned to ${scheduleDay.drivers.find(d => d.id === driverId)?.name}`,
+          });
         }
       }
-      
-      setDraggingStop(null);
     }
+    
+    setDraggingStop(null);
   };
 
   const getStopTypeIcon = (stopType: string) => {

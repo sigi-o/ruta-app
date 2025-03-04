@@ -220,7 +220,13 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setScheduleDay(prev => ({
       ...prev,
       stops: prev.stops.map(stop => 
-        stop.id === stopId ? { ...stop, driverId, status: 'assigned' as const } : stop
+        stop.id === stopId 
+          ? { 
+              ...stop, 
+              driverId, 
+              status: 'assigned' as const 
+            } 
+          : stop
       ),
     }));
   };
@@ -229,7 +235,13 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setScheduleDay(prev => ({
       ...prev,
       stops: prev.stops.map(stop => 
-        stop.id === stopId ? { ...stop, driverId: undefined, status: 'unassigned' as const } : stop
+        stop.id === stopId 
+          ? { 
+              ...stop, 
+              driverId: undefined, 
+              status: 'unassigned' as const 
+            } 
+          : stop
       ),
     }));
   };
