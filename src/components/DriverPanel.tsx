@@ -5,7 +5,7 @@ import { Driver } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trash2, Plus, User, Phone } from 'lucide-react';
+import { Trash2, Plus, User, Phone, UserX, PaintBucket, UserCheck, Pencil } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 
@@ -23,14 +23,17 @@ const driverColors = [
 ];
 
 const DriverPanel: React.FC = () => {
-  const { scheduleDay, addDriver, removeDriver } = useSchedule();
+  const { scheduleDay, addDriver, removeDriver, updateDriver } = useSchedule();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [newDriver, setNewDriver] = useState<Omit<Driver, 'id'>>({
     name: '',
     color: driverColors[0],
     vehicleType: '',
     phoneNumber: '',
     notes: '',
+    available: true,
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,8 +41,19 @@ const DriverPanel: React.FC = () => {
     setNewDriver(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selectedDriver) return;
+    
+    const { name, value } = e.target;
+    setSelectedDriver(prev => prev ? { ...prev, [name]: value } : null);
+  };
+
   const handleColorSelect = (color: string) => {
     setNewDriver(prev => ({ ...prev, color }));
+  };
+
+  const handleEditColorSelect = (color: string) => {
+    setSelectedDriver(prev => prev ? { ...prev, color } : null);
   };
 
   const handleAddDriver = () => {
@@ -51,6 +65,7 @@ const DriverPanel: React.FC = () => {
         vehicleType: '',
         phoneNumber: '',
         notes: '',
+        available: true,
       });
       setIsAddDialogOpen(false);
     }
@@ -58,6 +73,30 @@ const DriverPanel: React.FC = () => {
 
   const handleRemoveDriver = (driverId: string) => {
     removeDriver(driverId);
+    setIsEditDialogOpen(false);
+  };
+
+  const handleEditDriver = () => {
+    if (selectedDriver && selectedDriver.name.trim()) {
+      updateDriver(selectedDriver.id, selectedDriver);
+      setIsEditDialogOpen(false);
+      setSelectedDriver(null);
+    }
+  };
+
+  const handleDriverCardClick = (driver: Driver) => {
+    setSelectedDriver({...driver});
+    setIsEditDialogOpen(true);
+  };
+
+  const toggleDriverAvailability = () => {
+    if (selectedDriver) {
+      const updatedDriver = { 
+        ...selectedDriver, 
+        available: !selectedDriver.available 
+      };
+      setSelectedDriver(updatedDriver);
+    }
   };
 
   return (
@@ -76,15 +115,28 @@ const DriverPanel: React.FC = () => {
         ) : (
           <div className="space-y-3 animate-entrance">
             {scheduleDay.drivers.map((driver) => (
-              <Card key={driver.id} className="overflow-hidden border-l-4" style={{ borderLeftColor: driver.color }}>
+              <Card 
+                key={driver.id} 
+                className={`overflow-hidden border-l-4 transition-all cursor-pointer hover:shadow-md ${!driver.available ? 'opacity-60' : ''}`} 
+                style={{ borderLeftColor: driver.color }}
+                onClick={() => handleDriverCardClick(driver)}
+              >
                 <CardContent className="p-3">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center space-x-3">
-                      <div className="driver-avatar" style={{ backgroundColor: driver.color }}>
+                      <div className="driver-avatar relative" style={{ backgroundColor: driver.color }}>
                         {driver.name.charAt(0)}
+                        {!driver.available && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-gray-800/30 rounded-full">
+                            <UserX className="h-3 w-3 text-white" />
+                          </div>
+                        )}
                       </div>
                       <div>
-                        <h3 className="font-medium">{driver.name}</h3>
+                        <h3 className="font-medium flex items-center gap-1">
+                          {driver.name}
+                          {!driver.available && <span className="text-xs text-gray-500">(Unavailable)</span>}
+                        </h3>
                         {driver.vehicleType && (
                           <p className="text-xs text-gray-500">{driver.vehicleType}</p>
                         )}
@@ -93,10 +145,13 @@ const DriverPanel: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleRemoveDriver(driver.id)}
-                      className="h-8 w-8 text-gray-400 hover:text-red-500"
+                      className="h-8 w-8 text-gray-400 hover:text-blue-500"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDriverCardClick(driver);
+                      }}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Pencil className="h-4 w-4" />
                     </Button>
                   </div>
                   
@@ -182,6 +237,109 @@ const DriverPanel: React.FC = () => {
               <Button onClick={handleAddDriver} disabled={!newDriver.name.trim()}>
                 Add Driver
               </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Driver Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) setSelectedDriver(null);
+        }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Driver</DialogTitle>
+            </DialogHeader>
+            {selectedDriver && (
+              <div className="space-y-4 py-2">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name">Driver Name</Label>
+                  <Input
+                    id="edit-name"
+                    name="name"
+                    placeholder="Enter driver name"
+                    value={selectedDriver.name}
+                    onChange={handleEditInputChange}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="edit-vehicleType">Vehicle Type (Optional)</Label>
+                  <Input
+                    id="edit-vehicleType"
+                    name="vehicleType"
+                    placeholder="e.g. Van, Truck, Car"
+                    value={selectedDriver.vehicleType || ''}
+                    onChange={handleEditInputChange}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="edit-phoneNumber">Phone Number (Optional)</Label>
+                  <Input
+                    id="edit-phoneNumber"
+                    name="phoneNumber"
+                    placeholder="(555) 123-4567"
+                    value={selectedDriver.phoneNumber || ''}
+                    onChange={handleEditInputChange}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Driver Color</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {driverColors.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        className={`w-6 h-6 rounded-full ${
+                          selectedDriver.color === color ? 'ring-2 ring-offset-2 ring-gray-400' : ''
+                        }`}
+                        style={{ backgroundColor: color }}
+                        onClick={() => handleEditColorSelect(color)}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 pt-2">
+                  <Button 
+                    variant={selectedDriver.available ? "outline" : "default"}
+                    className={`${!selectedDriver.available ? "bg-green-600 hover:bg-green-700" : ""}`}
+                    onClick={toggleDriverAvailability}
+                  >
+                    {selectedDriver.available ? (
+                      <>
+                        <UserX className="h-4 w-4 mr-2" /> 
+                        Mark as Unavailable
+                      </>
+                    ) : (
+                      <>
+                        <UserCheck className="h-4 w-4 mr-2" /> 
+                        Mark as Available
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+              </div>
+            )}
+            <DialogFooter className="flex justify-between items-center">
+              <Button 
+                variant="destructive" 
+                onClick={() => selectedDriver && handleRemoveDriver(selectedDriver.id)}
+                className="mr-auto"
+              >
+                <Trash2 className="h-4 w-4 mr-2" /> Delete
+              </Button>
+              <div className="space-x-2">
+                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleEditDriver} disabled={!selectedDriver?.name.trim()}>
+                  Save Changes
+                </Button>
+              </div>
             </DialogFooter>
           </DialogContent>
         </Dialog>

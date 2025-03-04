@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { Driver, DeliveryStop, TimeSlot, ScheduleDay } from '@/types';
 import { generateTimeSlots } from '@/lib/utils';
@@ -8,6 +7,7 @@ interface ScheduleContextType {
   scheduleDay: ScheduleDay;
   addDriver: (driver: Omit<Driver, 'id'>) => void;
   removeDriver: (driverId: string) => void;
+  updateDriver: (driverId: string, updatedDriver: Partial<Driver>) => void;
   addStop: (stop: Omit<DeliveryStop, 'id' | 'status'>) => void;
   updateStop: (stopId: string, updatedStop: Partial<DeliveryStop>) => void;
   removeStop: (stopId: string) => void;
@@ -23,11 +23,11 @@ interface ScheduleContextType {
 const defaultTimeSlots = generateTimeSlots('07:00', '19:00', 30);
 
 const defaultDrivers: Driver[] = [
-  { id: '1', name: 'John Smith', color: '#3B82F6' },
-  { id: '2', name: 'Sarah Johnson', color: '#10B981' },
-  { id: '3', name: 'Michael Chen', color: '#6366F1' },
-  { id: '4', name: 'Jessica Lee', color: '#F59E0B' },
-  { id: '5', name: 'David Kim', color: '#EC4899' },
+  { id: '1', name: 'John Smith', color: '#3B82F6', available: true },
+  { id: '2', name: 'Sarah Johnson', color: '#10B981', available: true },
+  { id: '3', name: 'Michael Chen', color: '#6366F1', available: true },
+  { id: '4', name: 'Jessica Lee', color: '#F59E0B', available: true },
+  { id: '5', name: 'David Kim', color: '#EC4899', available: true },
 ];
 
 const defaultStops: DeliveryStop[] = [
@@ -102,6 +102,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const newDriver: Driver = {
       ...driver,
       id: `driver-${Date.now()}`,
+      available: driver.available !== undefined ? driver.available : true,
     };
 
     setScheduleDay(prev => ({
@@ -132,6 +133,37 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     toast({
       title: "Driver Removed",
       description: "Driver has been removed and their stops unassigned.",
+    });
+  };
+
+  const updateDriver = (driverId: string, updatedDriver: Partial<Driver>) => {
+    // If driver is marked as unavailable, unassign their stops
+    setScheduleDay(prev => {
+      let updatedStops = [...prev.stops];
+      
+      if (updatedDriver.available === false) {
+        updatedStops = prev.stops.map(stop => 
+          stop.driverId === driverId ? { ...stop, driverId: undefined, status: 'unassigned' as const } : stop
+        );
+        
+        toast({
+          title: "Driver Marked Unavailable",
+          description: "All stops assigned to this driver have been unassigned.",
+        });
+      }
+
+      return {
+        ...prev,
+        drivers: prev.drivers.map(driver => 
+          driver.id === driverId ? { ...driver, ...updatedDriver } : driver
+        ),
+        stops: updatedStops,
+      };
+    });
+
+    toast({
+      title: "Driver Updated",
+      description: "Driver information has been updated.",
     });
   };
 
@@ -185,7 +217,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const autoAssignStops = () => {
     setIsLoading(true);
 
-    // Simple auto-assignment algorithm based on time slots
+    // Simple auto-assignment algorithm based on time slots, but filter out unavailable drivers
     setTimeout(() => {
       setScheduleDay(prev => {
         const unassignedStops = [...prev.stops.filter(stop => stop.status === 'unassigned')];
@@ -200,18 +232,31 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           stopsByTime[stop.deliveryTime].push(stop);
         });
         
+        // Get only available drivers
+        const availableDriverIds = prev.drivers
+          .filter(d => d.available !== false)
+          .map(d => d.id);
+        
+        if (availableDriverIds.length === 0) {
+          toast({
+            title: "No Available Drivers",
+            description: "There are no available drivers to assign stops to.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return prev;
+        }
+        
         // Distribute stops to drivers based on delivery times
-        // This is a very simple distribution - just round-robin per time slot
         const updatedStops = [...prev.stops];
-        const driverIds = prev.drivers.map(d => d.id);
         
         Object.keys(stopsByTime).sort().forEach((time, timeIndex) => {
           const stopsForTime = stopsByTime[time];
           
           stopsForTime.forEach((stop, index) => {
             // Assign driver in round-robin fashion
-            const driverIndex = (timeIndex + index) % driverIds.length;
-            const driverId = driverIds[driverIndex];
+            const driverIndex = (timeIndex + index) % availableDriverIds.length;
+            const driverId = availableDriverIds[driverIndex];
             
             // Update the stop in the updatedStops array
             const foundIndex = updatedStops.findIndex(s => s.id === stop.id);
@@ -234,7 +279,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setIsLoading(false);
       toast({
         title: "Auto-Assignment Complete",
-        description: "Stops have been automatically assigned to drivers based on delivery times.",
+        description: "Stops have been automatically assigned to available drivers based on delivery times.",
       });
     }, 800); // Simulate processing time
   };
@@ -303,6 +348,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       scheduleDay,
       addDriver,
       removeDriver,
+      updateDriver,
       addStop,
       updateStop,
       removeStop,

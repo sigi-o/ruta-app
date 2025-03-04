@@ -15,6 +15,9 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
   const { scheduleDay, assignStop, unassignStop } = useSchedule();
   const [draggingStop, setDraggingStop] = useState<string | null>(null);
 
+  // Filter out unavailable drivers
+  const availableDrivers = scheduleDay.drivers.filter(driver => driver.available !== false);
+
   const handleDragStart = (stopId: string) => {
     setDraggingStop(stopId);
   };
@@ -55,7 +58,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
   const getStopsByDriverAndTime = () => {
     const result: Record<string, Record<string, DeliveryStop[]>> = {};
     
-    scheduleDay.drivers.forEach(driver => {
+    availableDrivers.forEach(driver => {
       result[driver.id] = {};
       scheduleDay.timeSlots.forEach(slot => {
         result[driver.id][slot.time] = [];
@@ -64,10 +67,14 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
     
     scheduleDay.stops.forEach(stop => {
       if (stop.status === 'assigned' && stop.driverId) {
-        if (!result[stop.driverId][stop.deliveryTime]) {
-          result[stop.driverId][stop.deliveryTime] = [];
+        // Only add the stop if the driver is available
+        const driver = scheduleDay.drivers.find(d => d.id === stop.driverId);
+        if (driver && driver.available !== false) {
+          if (!result[stop.driverId][stop.deliveryTime]) {
+            result[stop.driverId][stop.deliveryTime] = [];
+          }
+          result[stop.driverId][stop.deliveryTime].push(stop);
         }
-        result[stop.driverId][stop.deliveryTime].push(stop);
       }
     });
     
@@ -128,7 +135,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
             <div className="time-header">
               Time
             </div>
-            {scheduleDay.drivers.map(driver => (
+            {availableDrivers.map(driver => (
               <div 
                 key={driver.id}
                 className="driver-header"
@@ -151,7 +158,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
                 </div>
                 
                 <div className="driver-cells">
-                  {scheduleDay.drivers.map(driver => (
+                  {availableDrivers.map(driver => (
                     <div
                       key={`${driver.id}-${timeSlot.time}`}
                       className="driver-cell"

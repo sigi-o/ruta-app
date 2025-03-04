@@ -1,4 +1,3 @@
-
 export interface Driver {
   id: string;
   name: string;
@@ -6,6 +5,7 @@ export interface Driver {
   vehicleType?: string;
   phoneNumber?: string;
   notes?: string;
+  available?: boolean;
 }
 
 export interface DeliveryStop {
