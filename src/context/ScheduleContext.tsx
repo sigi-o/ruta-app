@@ -208,9 +208,9 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         Object.keys(stopsByTime).sort().forEach((time, timeIndex) => {
           const stopsForTime = stopsByTime[time];
           
-          stopsForTime.forEach((stop, stopIndex) => {
+          stopsForTime.forEach((stop, index) => {
             // Assign driver in round-robin fashion
-            const driverIndex = (timeIndex + stopIndex) % driverIds.length;
+            const driverIndex = (timeIndex + index) % driverIds.length;
             const driverId = driverIds[driverIndex];
             
             // Update the stop in the updatedStops array
@@ -219,7 +219,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               updatedStops[stopIndex] = {
                 ...updatedStops[stopIndex],
                 driverId,
-                status: 'assigned'
+                status: 'assigned' as const
               };
             }
           });
@@ -277,12 +277,12 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         clientName: row.clientName || row.customer_name || row.client || '',
         address: row.address || row.delivery_address || row.location || '',
         deliveryTime: row.deliveryTime || row.delivery_time || row.time || '12:00',
-        status: 'unassigned',
+        status: 'unassigned' as const,
         orderNumber: row.orderNumber || row.order_number || row.order_id || `ORD-${index + 100}`,
         contactPhone: row.contactPhone || row.phone || row.contact || '',
         specialInstructions: row.specialInstructions || row.instructions || row.notes || '',
         items: row.items ? (typeof row.items === 'string' ? [row.items] : row.items) : [],
-        stopType: 'delivery'
+        stopType: 'delivery' as const
       }));
       
       setScheduleDay(prev => ({
