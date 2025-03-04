@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
@@ -17,7 +16,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
   const [draggingStop, setDraggingStop] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Filter out unavailable drivers
   const availableDrivers = scheduleDay.drivers.filter(driver => driver.available !== false);
 
   const handleDragStart = (e: React.DragEvent, stopId: string) => {
@@ -26,7 +24,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
     e.dataTransfer.effectAllowed = 'move';
     setDraggingStop(stopId);
 
-    // Create a custom drag image to show while dragging
     const stop = scheduleDay.stops.find(s => s.id === stopId);
     if (stop) {
       const dragImage = document.createElement('div');
@@ -34,14 +31,11 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
       dragImage.textContent = stop.businessName;
       document.body.appendChild(dragImage);
       
-      // Position the drag image off-screen
       dragImage.style.position = 'absolute';
       dragImage.style.top = '-1000px';
       
-      // Set the drag image
       e.dataTransfer.setDragImage(dragImage, 0, 0);
       
-      // Clean up after a short delay
       setTimeout(() => {
         document.body.removeChild(dragImage);
       }, 100);
@@ -52,7 +46,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     
-    // Add visual indicator for drop target
     const target = e.currentTarget as HTMLElement;
     target.classList.add('drop-target');
   };
@@ -65,7 +58,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
   const handleDrop = (e: React.DragEvent, driverId: string, timeSlot: string) => {
     e.preventDefault();
     
-    // Remove visual indicator
     const target = e.currentTarget as HTMLElement;
     target.classList.remove('drop-target');
     
@@ -73,11 +65,9 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
     const source = e.dataTransfer.getData('source');
     
     if (stopId) {
-      // Update the stop's driver and time
       const stop = scheduleDay.stops.find(s => s.id === stopId);
       
       if (stop) {
-        // If moving from unassigned to assigned
         if (stop.status === 'unassigned' || source === 'unassigned') {
           assignStop(stopId, driverId);
           toast({
@@ -86,7 +76,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
           });
         } 
         
-        // If already assigned and changing driver
         else if (stop.driverId !== driverId) {
           unassignStop(stopId);
           assignStop(stopId, driverId);
@@ -96,7 +85,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
           });
         }
         
-        // If time slot is changing
         if (stop.deliveryTime !== timeSlot) {
           updateStop(stopId, { deliveryTime: timeSlot });
           toast({
@@ -134,7 +122,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
     
     scheduleDay.stops.forEach(stop => {
       if (stop.status === 'assigned' && stop.driverId) {
-        // Only add the stop if the driver is available
         const driver = scheduleDay.drivers.find(d => d.id === stop.driverId);
         if (driver && driver.available !== false) {
           if (!result[stop.driverId][stop.deliveryTime]) {
@@ -150,12 +137,10 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
 
   const stopsByDriverAndTime = getStopsByDriverAndTime();
 
-  // Navigation functions
   const goToPreviousDay = () => {
     const date = parseISO(selectedDate);
     const newDate = addDays(date, -1);
     const newDateString = format(newDate, 'yyyy-MM-dd');
-    // We'll use window.location to navigate to the new date
     const searchParams = new URLSearchParams(window.location.search);
     searchParams.set('date', newDateString);
     window.location.search = searchParams.toString();
@@ -165,13 +150,36 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
     const date = parseISO(selectedDate);
     const newDate = addDays(date, 1);
     const newDateString = format(newDate, 'yyyy-MM-dd');
-    // We'll use window.location to navigate to the new date
     const searchParams = new URLSearchParams(window.location.search);
     searchParams.set('date', newDateString);
     window.location.search = searchParams.toString();
   };
 
   const formattedDate = format(parseISO(selectedDate), 'EEEE, MMMM d, yyyy');
+
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .drop-target {
+        background-color: rgba(59, 130, 246, 0.1);
+        box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.5);
+      }
+      
+      .delivery-item, .unassigned-stop {
+        transition: transform 0.1s, box-shadow 0.1s;
+      }
+      
+      .delivery-item:hover, .unassigned-stop:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   return (
     <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
@@ -197,7 +205,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
 
       <ScrollArea className="flex-grow">
         <div className="schedule-container">
-          {/* Header Row with Driver Names */}
           <div className="sticky top-0 z-10 flex">
             <div className="time-header">
               Time
@@ -216,7 +223,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
             ))}
           </div>
 
-          {/* Time Slots and Stops */}
           <div className="schedule-body">
             {scheduleDay.timeSlots.map(timeSlot => (
               <div key={timeSlot.time} className="time-row">
@@ -288,22 +294,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
           </div>
         </div>
       </ScrollArea>
-
-      <style jsx global>{`
-        .drop-target {
-          background-color: rgba(59, 130, 246, 0.1);
-          box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.5);
-        }
-        
-        .delivery-item, .unassigned-stop {
-          transition: transform 0.1s, box-shadow 0.1s;
-        }
-        
-        .delivery-item:hover, .unassigned-stop:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-      `}</style>
     </div>
   );
 };
