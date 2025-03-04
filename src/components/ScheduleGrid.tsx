@@ -3,8 +3,9 @@ import React, { useState } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
 import { Card } from '@/components/ui/card';
-import { MapPin, Clock, AlertCircle, Package, ShoppingBag, Utensils } from 'lucide-react';
+import { MapPin, Clock, AlertCircle, Package, ShoppingBag, Utensils, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { addDays, format, parseISO } from 'date-fns';
 
 interface ScheduleGridProps {
   selectedDate: string;
@@ -75,10 +76,49 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
 
   const stopsByDriverAndTime = getStopsByDriverAndTime();
 
+  // Navigation functions
+  const goToPreviousDay = () => {
+    const date = parseISO(selectedDate);
+    const newDate = addDays(date, -1);
+    const newDateString = format(newDate, 'yyyy-MM-dd');
+    // We'll use window.location to navigate to the new date
+    const searchParams = new URLSearchParams(window.location.search);
+    searchParams.set('date', newDateString);
+    window.location.search = searchParams.toString();
+  };
+
+  const goToNextDay = () => {
+    const date = parseISO(selectedDate);
+    const newDate = addDays(date, 1);
+    const newDateString = format(newDate, 'yyyy-MM-dd');
+    // We'll use window.location to navigate to the new date
+    const searchParams = new URLSearchParams(window.location.search);
+    searchParams.set('date', newDateString);
+    window.location.search = searchParams.toString();
+  };
+
+  const formattedDate = format(parseISO(selectedDate), 'EEEE, MMMM d, yyyy');
+
   return (
     <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
-      <div className="card-header">
-        <h2 className="text-lg font-medium">Schedule View - {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h2>
+      <div className="card-header flex items-center justify-between">
+        <button 
+          onClick={goToPreviousDay}
+          className="p-1 hover:bg-blue-50 rounded-full text-blue-600"
+          aria-label="Previous day"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        
+        <h2 className="text-lg font-medium">{formattedDate}</h2>
+        
+        <button 
+          onClick={goToNextDay}
+          className="p-1 hover:bg-blue-50 rounded-full text-blue-600"
+          aria-label="Next day"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
       </div>
 
       <ScrollArea className="flex-grow">
