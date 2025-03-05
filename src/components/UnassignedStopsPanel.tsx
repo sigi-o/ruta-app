@@ -97,7 +97,7 @@ const UnassignedStopsPanel: React.FC = () => {
         toast({
           title: "Date Changed",
           description: `This stop will be moved to ${currentStop.deliveryDate}, which is different from the current view.`,
-          variant: "warning"
+          variant: "destructive"
         });
       }
       
