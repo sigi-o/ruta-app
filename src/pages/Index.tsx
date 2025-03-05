@@ -28,8 +28,17 @@ const ScheduleManager: React.FC = () => {
 
   // When the grid calls this function, we update the main date state
   const handleDateChange = (newDate: string) => {
-    const parsedDate = new Date(newDate);
-    setDate(parsedDate);
+    try {
+      const parsedDate = new Date(newDate);
+      // Ensure this is a valid date before updating state
+      if (!isNaN(parsedDate.getTime())) {
+        setDate(parsedDate);
+      } else {
+        console.error("Invalid date format received:", newDate);
+      }
+    } catch (error) {
+      console.error("Error parsing date:", error);
+    }
   };
 
   // When the calendar calls this function, we update the main date state

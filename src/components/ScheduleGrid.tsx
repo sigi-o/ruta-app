@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
@@ -189,7 +190,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
 
   return (
     <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
-      <div className="card-header flex items-center justify-between">
+      <div className="card-header flex items-center justify-between p-4">
         <button 
           onClick={goToPreviousDay}
           className="p-1 hover:bg-blue-50 rounded-full text-blue-600"
