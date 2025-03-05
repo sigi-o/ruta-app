@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ScheduleProvider } from '@/context/ScheduleContext';
 import DriverPanel from '@/components/DriverPanel';
 import ScheduleGrid from '@/components/ScheduleGrid';
 import UnassignedStopsPanel from '@/components/UnassignedStopsPanel';
 import CsvImportModal from '@/components/CsvImportModal';
+import PrintableSchedule from '@/components/PrintableSchedule';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -14,11 +15,31 @@ import { useSchedule } from '@/context/ScheduleContext';
 const ScheduleManager: React.FC = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const { autoAssignStops, saveSchedule, isLoading } = useSchedule();
+  const [isPrintView, setIsPrintView] = useState(false);
+  const { autoAssignStops, saveSchedule, isLoading, scheduleDay } = useSchedule();
+  const printTimeoutRef = useRef<number | null>(null);
   
   const handlePrint = () => {
-    window.print();
+    setIsPrintView(true);
+    
+    // Use setTimeout to ensure the print view is rendered before printing
+    printTimeoutRef.current = window.setTimeout(() => {
+      window.print();
+      // Set a timeout to hide print view after printing
+      printTimeoutRef.current = window.setTimeout(() => {
+        setIsPrintView(false);
+      }, 500);
+    }, 300);
   };
+
+  // Clean up any timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (printTimeoutRef.current) {
+        clearTimeout(printTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Convert date to string format for the grid
   const getFormattedDateString = () => {
@@ -54,8 +75,8 @@ const ScheduleManager: React.FC = () => {
     console.log("Current date state:", format(date, 'yyyy-MM-dd'));
   }, [date]);
 
+  // Add global styles for drag and drop and print view
   useEffect(() => {
-    // Add global styles for drag and drop
     const style = document.createElement('style');
     style.textContent = `
       .driver-cell {
@@ -156,6 +177,106 @@ const ScheduleManager: React.FC = () => {
       .hidden-stop {
         display: none !important;
       }
+      
+      /* Print-specific styles */
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        
+        .print-container, .print-container * {
+          visibility: visible;
+        }
+        
+        .print-container {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+        
+        .print-page {
+          page-break-after: always;
+          padding: 20px;
+        }
+        
+        .print-header {
+          margin-bottom: 20px;
+        }
+        
+        .print-header h1 {
+          margin: 0 0 5px 0;
+          font-size: 24px;
+        }
+        
+        .print-date {
+          font-size: 14px;
+          margin-bottom: 15px;
+        }
+        
+        .driver-name {
+          margin-bottom: 20px;
+        }
+        
+        .driver-name h2 {
+          margin: 0 0 5px 0;
+          font-size: 20px;
+        }
+        
+        .stops-list {
+          margin-top: 20px;
+        }
+        
+        .stop-item {
+          margin-bottom: 25px;
+          padding-bottom: 15px;
+          border-bottom: 1px solid #eee;
+        }
+        
+        .stop-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 10px;
+        }
+        
+        .stop-header h3 {
+          margin: 0;
+          font-size: 16px;
+        }
+        
+        .stop-time {
+          font-weight: bold;
+        }
+        
+        .stop-address {
+          margin-bottom: 10px;
+        }
+        
+        .stop-details ul {
+          padding-left: 20px;
+          margin: 5px 0;
+        }
+        
+        .items-list {
+          margin-top: 5px;
+        }
+        
+        .print-footer {
+          margin-top: 30px;
+          font-size: 12px;
+          color: #666;
+          display: flex;
+          justify-content: space-between;
+        }
+        
+        .no-stops {
+          padding: 20px;
+          text-align: center;
+          font-style: italic;
+          color: #666;
+        }
+      }
     `;
     document.head.appendChild(style);
 
@@ -163,6 +284,19 @@ const ScheduleManager: React.FC = () => {
       document.head.removeChild(style);
     };
   }, []);
+
+  // If in print view, only render the printable schedule
+  if (isPrintView) {
+    return (
+      <div className="print-only">
+        <PrintableSchedule 
+          drivers={scheduleDay.drivers} 
+          stops={scheduleDay.stops}
+          selectedDate={getFormattedDateString()}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen">
