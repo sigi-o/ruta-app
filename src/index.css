@@ -93,7 +93,8 @@
 
 /* Schedule Grid New Styles */
 .schedule-container {
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
   border-top: 1px solid #eaeaea;
   border-left: 1px solid #eaeaea;
 }
