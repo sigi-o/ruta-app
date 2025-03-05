@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DeliveryStop, Driver } from '@/types';
 import { format } from 'date-fns';
@@ -18,7 +19,7 @@ const PrintableSchedule: React.FC<PrintableScheduleProps> = ({
     .filter(driver => driver.available !== false)
     .map(driver => {
       const driverStops = stops
-        .filter(stop => stop.driverId === driver.id)
+        .filter(stop => stop.driverId === driver.id && stop.deliveryDate === selectedDate)
         .sort((a, b) => {
           // Sort by delivery time
           const timeA = a.deliveryTime.split(':').map(Number);

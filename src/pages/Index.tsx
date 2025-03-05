@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { ScheduleProvider } from '@/context/ScheduleContext';
 import DriverPanel from '@/components/DriverPanel';
@@ -20,14 +21,21 @@ const ScheduleManager: React.FC = () => {
   const printTimeoutRef = useRef<number | null>(null);
   
   const handlePrint = () => {
-    setIsPrintView(true);
+    console.log("Print triggered, refreshing print view with current data");
+    // Force a re-render of the print view
+    setIsPrintView(false);
     
-    printTimeoutRef.current = window.setTimeout(() => {
-      window.print();
+    // Short timeout to ensure state is updated before setting to true
+    setTimeout(() => {
+      setIsPrintView(true);
+      
       printTimeoutRef.current = window.setTimeout(() => {
-        setIsPrintView(false);
-      }, 500);
-    }, 300);
+        window.print();
+        printTimeoutRef.current = window.setTimeout(() => {
+          setIsPrintView(false);
+        }, 500);
+      }, 300);
+    }, 50);
   };
 
   useEffect(() => {
@@ -286,12 +294,15 @@ const ScheduleManager: React.FC = () => {
   }, []);
 
   if (isPrintView) {
+    const currentDateString = getFormattedDateString();
+    console.log(`Rendering print view for date: ${currentDateString}`);
+    
     return (
       <div className="print-only">
         <PrintableSchedule 
           drivers={scheduleDay.drivers} 
           stops={scheduleDay.stops}
-          selectedDate={getFormattedDateString()}
+          selectedDate={currentDateString}
         />
       </div>
     );
