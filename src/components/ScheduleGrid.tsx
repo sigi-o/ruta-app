@@ -3,7 +3,7 @@ import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
 import { Card } from '@/components/ui/card';
 import { MapPin, Clock, AlertCircle, Package, ShoppingBag, ChevronLeft, ChevronRight, GripHorizontal } from 'lucide-react';
-import { addDays, format, parseISO } from 'date-fns';
+import { addDays, format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
 interface ScheduleGridProps {
@@ -15,8 +15,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
   const { scheduleDay, assignStop, unassignStop, updateStop, removeStop, editStop } = useSchedule();
   const [draggingStop, setDraggingStop] = useState<string | null>(null);
   const { toast } = useToast();
-
-  const availableDrivers = scheduleDay.drivers.filter(driver => driver.available !== false);
 
   const handleDragStart = (e: React.DragEvent, stopId: string) => {
     e.dataTransfer.setData('stopId', stopId);
@@ -123,6 +121,8 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
   const getStopsByDriverAndTime = () => {
     const result: Record<string, Record<string, DeliveryStop[]>> = {};
     
+    const availableDrivers = scheduleDay.drivers.filter(driver => driver.available !== false);
+
     availableDrivers.forEach(driver => {
       result[driver.id] = {};
       scheduleDay.timeSlots.forEach(slot => {
@@ -145,6 +145,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
     return result;
   };
 
+  const availableDrivers = scheduleDay.drivers.filter(driver => driver.available !== false);
   const stopsByDriverAndTime = getStopsByDriverAndTime();
 
   const goToPreviousDay = () => {

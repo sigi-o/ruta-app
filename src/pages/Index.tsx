@@ -8,7 +8,7 @@ import CsvImportModal from '@/components/CsvImportModal';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format, parse } from 'date-fns';
+import { format } from 'date-fns';
 import { CalendarIcon, Download, Upload, Printer, Save } from 'lucide-react';
 import { useSchedule } from '@/context/ScheduleContext';
 
@@ -27,17 +27,17 @@ const ScheduleManager: React.FC = () => {
   };
 
   // When the grid calls this function, we update the main date state
-  const handleDateChange = (newDate: string) => {
+  const handleDateChange = (newDateString: string) => {
     try {
-      const parsedDate = new Date(newDate);
+      const parsedDate = new Date(newDateString);
       // Ensure this is a valid date before updating state
       if (!isNaN(parsedDate.getTime())) {
         setDate(parsedDate);
       } else {
-        console.error("Invalid date format received:", newDate);
+        console.error("Invalid date format received from grid:", newDateString);
       }
     } catch (error) {
-      console.error("Error parsing date:", error);
+      console.error("Error parsing date from grid:", error);
     }
   };
 
@@ -225,7 +225,7 @@ const ScheduleManager: React.FC = () => {
         <div className="w-3/5 bg-white rounded-lg shadow-sm overflow-hidden">
           <ScheduleGrid 
             selectedDate={getFormattedDateString()} 
-            onDateChange={handleDateChange}
+            onDateChange={handleDateChange} 
           />
         </div>
         
