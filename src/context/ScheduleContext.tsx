@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { Driver, DeliveryStop, TimeSlot, ScheduleDay } from '@/types';
 import { generateTimeSlots } from '@/lib/utils';
@@ -20,6 +19,7 @@ interface ScheduleContextType {
   importCsvData: (data: any[]) => void;
   isLoading: boolean;
   editStop: (stopId: string) => void;
+  duplicateStop: (stopId: string) => void;
 }
 
 const defaultTimeSlots = generateTimeSlots('07:00', '19:00', 30);
@@ -103,7 +103,6 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const initialLoadComplete = useRef(false);
 
   useEffect(() => {
-    // Only load the saved schedule once when the component mounts
     if (!initialLoadComplete.current) {
       loadSavedSchedule();
       initialLoadComplete.current = true;
@@ -278,7 +277,6 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           .map(d => d.id);
         
         if (availableDriverIds.length === 0) {
-          // Using setTimeout to avoid state updates during render
           setTimeout(() => {
             toast({
               title: "No Available Drivers",
@@ -318,7 +316,6 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       setIsLoading(false);
       
-      // Using setTimeout to avoid state updates during render
       setTimeout(() => {
         toast({
           title: "Auto-Assignment Complete",
@@ -333,7 +330,6 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       localStorage.setItem('catering-schedule', JSON.stringify(scheduleDay));
       
-      // Using setTimeout to avoid state updates during render
       setTimeout(() => {
         toast({
           title: "Schedule Saved",
@@ -343,7 +339,6 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch (error) {
       console.error('Error saving schedule:', error);
       
-      // Using setTimeout to avoid state updates during render
       setTimeout(() => {
         toast({
           title: "Error Saving Schedule",
@@ -403,6 +398,34 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  const duplicateStop = (stopId: string) => {
+    setScheduleDay(prev => {
+      const stopToDuplicate = prev.stops.find(stop => stop.id === stopId);
+      
+      if (!stopToDuplicate) {
+        return prev;
+      }
+      
+      const duplicatedStop: DeliveryStop = {
+        ...stopToDuplicate,
+        id: `stop-${Date.now()}`,
+        status: 'unassigned',
+        driverId: undefined,
+        orderNumber: stopToDuplicate.orderNumber ? `${stopToDuplicate.orderNumber}-copy` : undefined,
+      };
+      
+      return {
+        ...prev,
+        stops: [...prev.stops, duplicatedStop],
+      };
+    });
+    
+    toast({
+      title: "Stop Duplicated",
+      description: "A copy of the stop has been created and added to unassigned stops.",
+    });
+  };
+
   return (
     <ScheduleContext.Provider value={{
       scheduleDay,
@@ -419,7 +442,8 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       loadSavedSchedule,
       importCsvData,
       isLoading,
-      editStop
+      editStop,
+      duplicateStop
     }}>
       {children}
     </ScheduleContext.Provider>
