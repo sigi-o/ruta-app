@@ -21,10 +21,12 @@ const ScheduleManager: React.FC = () => {
     window.print();
   };
 
+  // When the grid calls this function, we update the main date state
   const handleDateChange = (newDate: string) => {
     setDate(new Date(newDate));
   };
 
+  // When the calendar calls this function, we update the main date state
   const handleCalendarSelect = (selectedDate: Date | undefined) => {
     if (selectedDate) {
       setDate(selectedDate);
