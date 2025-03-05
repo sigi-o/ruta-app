@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
@@ -241,6 +242,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
     try {
       const date = new Date(selectedDate);
       if (!isNaN(date.getTime())) {
+        // Move back exactly one day
         const newDate = addDays(date, -1);
         const newDateString = format(newDate, 'yyyy-MM-dd');
         console.log("Going to previous day:", newDateString);
@@ -257,6 +259,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
     try {
       const date = new Date(selectedDate);
       if (!isNaN(date.getTime())) {
+        // Move forward exactly one day
         const newDate = addDays(date, 1);
         const newDateString = format(newDate, 'yyyy-MM-dd');
         console.log("Going to next day:", newDateString);
