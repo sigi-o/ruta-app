@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSchedule, editStopEventChannel } from '@/context/ScheduleContext';
 import { DeliveryStop } from '@/types';
@@ -503,14 +504,28 @@ const UnassignedStopsPanel: React.FC = () => {
             </div>
           )}
           <DialogFooter className="flex justify-between">
-            <Button 
-              variant="destructive"
-              onClick={() => handleDeleteStop(currentStop?.id || '')}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete
-            </Button>
+            <div className="flex space-x-2">
+              <Button 
+                variant="destructive"
+                onClick={() => handleDeleteStop(currentStop?.id || '')}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  if (currentStop) {
+                    duplicateStop(currentStop.id);
+                    setIsEditModalOpen(false);
+                  }
+                }}
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Duplicate
+              </Button>
+            </div>
             <div className="flex space-x-2">
               <Button 
                 variant="outline" 

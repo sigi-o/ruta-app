@@ -365,20 +365,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
                               </div>
                             )}
                           </div>
-
-                          {expandedStopId === stop.id && (
-                            <div className="expanded-stop-actions">
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="w-full text-xs" 
-                                onClick={(e) => handleDuplicateStop(e, stop.id)}
-                              >
-                                <Copy className="h-3 w-3 mr-1" />
-                                Duplicate Stop
-                              </Button>
-                            </div>
-                          )}
                         </div>
                       ))}
                     </div>
