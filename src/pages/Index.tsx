@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ScheduleProvider } from '@/context/ScheduleContext';
 import DriverPanel from '@/components/DriverPanel';
@@ -33,6 +32,7 @@ const ScheduleManager: React.FC = () => {
       // Ensure this is a valid date before updating state
       if (!isNaN(parsedDate.getTime())) {
         setDate(parsedDate);
+        console.log("Date updated from grid:", format(parsedDate, 'yyyy-MM-dd'));
       } else {
         console.error("Invalid date format received from grid:", newDateString);
       }
@@ -45,8 +45,14 @@ const ScheduleManager: React.FC = () => {
   const handleCalendarSelect = (selectedDate: Date | undefined) => {
     if (selectedDate) {
       setDate(selectedDate);
+      console.log("Date updated from calendar:", format(selectedDate, 'yyyy-MM-dd'));
     }
   };
+
+  // Log when the date state changes to help with debugging
+  useEffect(() => {
+    console.log("Current date state:", format(date, 'yyyy-MM-dd'));
+  }, [date]);
 
   useEffect(() => {
     // Add global styles for drag and drop

@@ -154,6 +154,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
       if (!isNaN(date.getTime())) {
         const newDate = addDays(date, -1);
         const newDateString = format(newDate, 'yyyy-MM-dd');
+        console.log("Going to previous day:", newDateString);
         onDateChange(newDateString);
       } else {
         console.error("Invalid date for previous day navigation:", selectedDate);
@@ -169,6 +170,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
       if (!isNaN(date.getTime())) {
         const newDate = addDays(date, 1);
         const newDateString = format(newDate, 'yyyy-MM-dd');
+        console.log("Going to next day:", newDateString);
         onDateChange(newDateString);
       } else {
         console.error("Invalid date for next day navigation:", selectedDate);
@@ -191,6 +193,10 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
     formattedDate = "Invalid Date";
     console.error("Error formatting date:", error);
   }
+
+  useEffect(() => {
+    console.log("ScheduleGrid received date:", selectedDate);
+  }, [selectedDate]);
 
   useEffect(() => {
     const style = document.createElement('style');
