@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
@@ -21,7 +20,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
 
   const handleDragStart = (e: React.DragEvent, stopId: string) => {
     console.log('Drag start in ScheduleGrid:', stopId);
-    // Set the data for transfer - make sure to stringify for Firefox compatibility
     e.dataTransfer.setData('text/plain', JSON.stringify({
       stopId: stopId,
       source: 'schedule'
@@ -29,7 +27,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
     e.dataTransfer.effectAllowed = 'move';
     setDraggingStop(stopId);
 
-    // Create a custom drag image
     const stop = scheduleDay.stops.find(s => s.id === stopId);
     if (stop) {
       const dragImage = document.createElement('div');
@@ -72,7 +69,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
     let source = '';
     
     try {
-      // Parse the stringified data for Firefox compatibility
       const dataTransfer = JSON.parse(e.dataTransfer.getData('text/plain'));
       stopId = dataTransfer.stopId;
       source = dataTransfer.source;
@@ -148,7 +144,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
   };
 
   const handleDuplicateStop = (e: React.MouseEvent, stopId: string) => {
-    e.stopPropagation(); // Prevent the click from triggering the parent card's click
+    e.stopPropagation();
     duplicateStop(stopId);
     toast({
       title: "Stop Duplicated",
@@ -370,7 +366,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
                             )}
                           </div>
 
-                          {/* Expanded section with duplicate button */}
                           {expandedStopId === stop.id && (
                             <div className="expanded-stop-actions">
                               <Button 
