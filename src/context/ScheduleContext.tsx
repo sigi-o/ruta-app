@@ -214,6 +214,11 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ...prev,
       stops: prev.stops.filter(stop => stop.id !== stopId),
     }));
+    
+    toast({
+      title: "Stop Removed",
+      description: "The stop has been removed from the schedule.",
+    });
   };
 
   const assignStop = (stopId: string, driverId: string) => {

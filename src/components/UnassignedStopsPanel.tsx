@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSchedule, editStopEventChannel } from '@/context/ScheduleContext';
 import { DeliveryStop } from '@/types';
@@ -25,7 +24,6 @@ const UnassignedStopsPanel: React.FC = () => {
     stopType: 'delivery',
   });
 
-  // Only get stops that are explicitly unassigned
   const unassignedStops = scheduleDay.stops.filter(stop => stop.status === 'unassigned');
 
   useEffect(() => {
@@ -90,16 +88,19 @@ const UnassignedStopsPanel: React.FC = () => {
       e.stopPropagation();
     }
     removeStop(stopId);
+    
+    if (isEditModalOpen) {
+      setIsEditModalOpen(false);
+      setCurrentStop(null);
+    }
   };
 
   const handleDragStart = (e: React.DragEvent, stop: DeliveryStop) => {
-    // Set data that will be needed on drop
     e.dataTransfer.setData('stopId', stop.id);
     e.dataTransfer.setData('source', 'unassigned');
     e.dataTransfer.effectAllowed = 'move';
     setDraggingStop(stop.id);
     
-    // Create a custom drag image
     const dragImage = document.createElement('div');
     dragImage.className = 'p-2 bg-blue-100 border border-blue-300 rounded shadow-sm';
     dragImage.textContent = stop.businessName;
@@ -485,10 +486,23 @@ const UnassignedStopsPanel: React.FC = () => {
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
-              Cancel
-            </Button>
+          <DialogFooter className="flex justify-between">
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsEditModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => handleDeleteStop(currentStop?.id || '')}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            </div>
             <Button 
               onClick={handleUpdateStop} 
               disabled={!currentStop?.businessName || !currentStop?.address || !currentStop?.deliveryTime || !currentStop?.stopType}

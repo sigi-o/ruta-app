@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
@@ -12,7 +13,7 @@ interface ScheduleGridProps {
 }
 
 const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
-  const { scheduleDay, assignStop, unassignStop, updateStop, editStop } = useSchedule();
+  const { scheduleDay, assignStop, unassignStop, updateStop, removeStop, editStop } = useSchedule();
   const [draggingStop, setDraggingStop] = useState<string | null>(null);
   const { toast } = useToast();
 
