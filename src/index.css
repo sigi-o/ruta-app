@@ -119,6 +119,8 @@
   height: 56px;
   border-right: 1px solid #eaeaea;
   border-bottom: 1px solid #eaeaea;
+  box-sizing: border-box;
+  width: 200px;
 }
 
 .schedule-body {
@@ -146,6 +148,8 @@
 .driver-cell {
   @apply p-2 bg-white hover:bg-blue-50/30 transition-colors;
   min-width: 200px;
+  width: 200px;
+  box-sizing: border-box;
   border-right: 1px solid #eaeaea;
   border-bottom: 1px solid #eaeaea;
 }
