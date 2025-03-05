@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
@@ -18,11 +17,13 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
   const { toast } = useToast();
 
   const handleDragStart = (e: React.DragEvent, stopId: string) => {
+    // Set the data for transfer
     e.dataTransfer.setData('stopId', stopId);
     e.dataTransfer.setData('source', 'schedule');
     e.dataTransfer.effectAllowed = 'move';
     setDraggingStop(stopId);
 
+    // Create a custom drag image
     const stop = scheduleDay.stops.find(s => s.id === stopId);
     if (stop) {
       const dragImage = document.createElement('div');
@@ -146,8 +147,50 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
     return result;
   };
 
+  useEffect(() => {
+    console.log("ScheduleGrid received date:", selectedDate);
+  }, [selectedDate]);
+
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .drop-target {
+        background-color: rgba(59, 130, 246, 0.1);
+        box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.5);
+      }
+      
+      .delivery-item, .unassigned-stop {
+        transition: transform 0.1s, box-shadow 0.1s;
+      }
+      
+      .delivery-item:hover, .unassigned-stop:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   const availableDrivers = scheduleDay.drivers.filter(driver => driver.available !== false);
   const stopsByDriverAndTime = getStopsByDriverAndTime();
+
+  let formattedDate = "";
+  try {
+    const parsedDate = new Date(selectedDate);
+    if (!isNaN(parsedDate.getTime())) {
+      formattedDate = format(parsedDate, 'EEEE, MMMM d, yyyy');
+    } else {
+      formattedDate = "Invalid Date";
+      console.error("Invalid date format:", selectedDate);
+    }
+  } catch (error) {
+    formattedDate = "Invalid Date";
+    console.error("Error formatting date:", error);
+  }
 
   const goToPreviousDay = () => {
     try {
@@ -180,48 +223,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
       console.error("Error navigating to next day:", error);
     }
   };
-
-  let formattedDate = "";
-  try {
-    const parsedDate = new Date(selectedDate);
-    if (!isNaN(parsedDate.getTime())) {
-      formattedDate = format(parsedDate, 'EEEE, MMMM d, yyyy');
-    } else {
-      formattedDate = "Invalid Date";
-      console.error("Invalid date format:", selectedDate);
-    }
-  } catch (error) {
-    formattedDate = "Invalid Date";
-    console.error("Error formatting date:", error);
-  }
-
-  useEffect(() => {
-    console.log("ScheduleGrid received date:", selectedDate);
-  }, [selectedDate]);
-
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = `
-      .drop-target {
-        background-color: rgba(59, 130, 246, 0.1);
-        box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.5);
-      }
-      
-      .delivery-item, .unassigned-stop {
-        transition: transform 0.1s, box-shadow 0.1s;
-      }
-      
-      .delivery-item:hover, .unassigned-stop:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      }
-    `;
-    document.head.appendChild(style);
-
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
 
   return (
     <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
