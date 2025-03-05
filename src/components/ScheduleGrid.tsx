@@ -242,10 +242,11 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
     try {
       const date = new Date(selectedDate);
       if (!isNaN(date.getTime())) {
-        // Move back exactly one day
+        // Calculate previous day
         const newDate = addDays(date, -1);
         const newDateString = format(newDate, 'yyyy-MM-dd');
         console.log("Going to previous day:", newDateString);
+        // Direct update to parent
         onDateChange(newDateString);
       } else {
         console.error("Invalid date for previous day navigation:", selectedDate);
@@ -259,10 +260,11 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
     try {
       const date = new Date(selectedDate);
       if (!isNaN(date.getTime())) {
-        // Move forward exactly one day
+        // Calculate next day
         const newDate = addDays(date, 1);
         const newDateString = format(newDate, 'yyyy-MM-dd');
         console.log("Going to next day:", newDateString);
+        // Direct update to parent
         onDateChange(newDateString);
       } else {
         console.error("Invalid date for next day navigation:", selectedDate);
