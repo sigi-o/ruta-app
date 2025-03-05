@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
@@ -149,20 +148,48 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
   const stopsByDriverAndTime = getStopsByDriverAndTime();
 
   const goToPreviousDay = () => {
-    const date = parseISO(selectedDate);
-    const newDate = addDays(date, -1);
-    const newDateString = format(newDate, 'yyyy-MM-dd');
-    onDateChange(newDateString);
+    try {
+      const date = new Date(selectedDate);
+      if (!isNaN(date.getTime())) {
+        const newDate = addDays(date, -1);
+        const newDateString = format(newDate, 'yyyy-MM-dd');
+        onDateChange(newDateString);
+      } else {
+        console.error("Invalid date for previous day navigation:", selectedDate);
+      }
+    } catch (error) {
+      console.error("Error navigating to previous day:", error);
+    }
   };
 
   const goToNextDay = () => {
-    const date = parseISO(selectedDate);
-    const newDate = addDays(date, 1);
-    const newDateString = format(newDate, 'yyyy-MM-dd');
-    onDateChange(newDateString);
+    try {
+      const date = new Date(selectedDate);
+      if (!isNaN(date.getTime())) {
+        const newDate = addDays(date, 1);
+        const newDateString = format(newDate, 'yyyy-MM-dd');
+        onDateChange(newDateString);
+      } else {
+        console.error("Invalid date for next day navigation:", selectedDate);
+      }
+    } catch (error) {
+      console.error("Error navigating to next day:", error);
+    }
   };
 
-  const formattedDate = format(parseISO(selectedDate), 'EEEE, MMMM d, yyyy');
+  let formattedDate = "";
+  try {
+    const parsedDate = new Date(selectedDate);
+    if (!isNaN(parsedDate.getTime())) {
+      formattedDate = format(parsedDate, 'EEEE, MMMM d, yyyy');
+    } else {
+      formattedDate = "Invalid Date";
+      console.error("Invalid date format:", selectedDate);
+    }
+  } catch (error) {
+    formattedDate = "Invalid Date";
+    console.error("Error formatting date:", error);
+  }
 
   useEffect(() => {
     const style = document.createElement('style');
