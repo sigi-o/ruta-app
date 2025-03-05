@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
@@ -85,9 +84,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
     if (!stop) return;
     
     if (source === 'unassigned') {
-      // If the stop has a different date than the currently selected date
       if (stop.deliveryDate !== selectedDate) {
-        // Update the stop's date to match the grid
         updateStop(stopId, {
           deliveryDate: selectedDate,
           deliveryTime: timeSlot,
@@ -172,7 +169,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
       });
     });
     
-    // Only display stops that match the selected date
     const stopsForCurrentDate = scheduleDay.stops.filter(stop => stop.deliveryDate === selectedDate);
     
     stopsForCurrentDate.forEach(stop => {
