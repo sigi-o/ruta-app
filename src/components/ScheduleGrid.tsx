@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
@@ -214,99 +213,97 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
         </button>
       </div>
 
-      <ScrollArea className="flex-grow">
+      <div className="flex-grow overflow-auto">
         <div className="schedule-container">
-          <div className="w-full overflow-x-auto">
-            <div className="sticky top-0 z-10 flex">
-              <div className="time-header">
-                Time
-              </div>
-              {availableDrivers.map(driver => (
-                <div 
-                  key={driver.id}
-                  className="driver-header"
-                  style={{ borderLeft: `4px solid ${driver.color}` }}
-                >
-                  <div className="driver-avatar mr-2" style={{ backgroundColor: driver.color }}>
-                    {driver.name.charAt(0)}
-                  </div>
-                  <span>{driver.name}</span>
-                </div>
-              ))}
+          <div className="schedule-header sticky top-0 z-10 flex">
+            <div className="time-header">
+              Time
             </div>
+            {availableDrivers.map(driver => (
+              <div 
+                key={driver.id}
+                className="driver-header"
+                style={{ borderLeft: `4px solid ${driver.color}` }}
+              >
+                <div className="driver-avatar mr-2" style={{ backgroundColor: driver.color }}>
+                  {driver.name.charAt(0)}
+                </div>
+                <span>{driver.name}</span>
+              </div>
+            ))}
+          </div>
 
-            <div className="schedule-body">
-              {scheduleDay.timeSlots.map(timeSlot => (
-                <div key={timeSlot.time} className="time-row">
-                  <div className="time-label">
-                    {timeSlot.label}
-                  </div>
-                  
-                  <div className="driver-cells">
-                    {availableDrivers.map(driver => (
-                      <div
-                        key={`${driver.id}-${timeSlot.time}`}
-                        className="driver-cell"
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={(e) => handleDrop(e, driver.id, timeSlot.time)}
-                      >
-                        {stopsByDriverAndTime[driver.id][timeSlot.time]?.map(stop => (
-                          <div
-                            key={stop.id}
-                            className={`delivery-item cursor-grab ${draggingStop === stop.id ? 'opacity-50' : ''}`}
-                            style={{ backgroundColor: `${driver.color}15`, borderLeft: `3px solid ${driver.color}` }}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, stop.id)}
-                            onDragEnd={() => setDraggingStop(null)}
-                            onClick={() => editStop(stop.id)}
-                          >
-                            <div className="flex justify-between items-start">
-                              <div className="font-medium text-gray-800">{stop.businessName || stop.clientName}</div>
-                              <div className="flex items-center text-xs gap-1">
-                                <div className="text-gray-500">
-                                  <Clock className="h-3 w-3 inline mr-1" />
-                                  {stop.deliveryTime}
-                                </div>
-                                <div 
-                                  className="h-6 w-6 flex items-center justify-center text-gray-400 cursor-grab"
-                                  onMouseDown={(e) => e.stopPropagation()}
-                                >
-                                  <GripHorizontal className="h-3 w-3" />
-                                </div>
+          <div className="schedule-body">
+            {scheduleDay.timeSlots.map(timeSlot => (
+              <div key={timeSlot.time} className="time-row">
+                <div className="time-label">
+                  {timeSlot.label}
+                </div>
+                
+                <div className="driver-cells">
+                  {availableDrivers.map(driver => (
+                    <div
+                      key={`${driver.id}-${timeSlot.time}`}
+                      className="driver-cell"
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, driver.id, timeSlot.time)}
+                    >
+                      {stopsByDriverAndTime[driver.id][timeSlot.time]?.map(stop => (
+                        <div
+                          key={stop.id}
+                          className={`delivery-item cursor-grab ${draggingStop === stop.id ? 'opacity-50' : ''}`}
+                          style={{ backgroundColor: `${driver.color}15`, borderLeft: `3px solid ${driver.color}` }}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, stop.id)}
+                          onDragEnd={() => setDraggingStop(null)}
+                          onClick={() => editStop(stop.id)}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="font-medium text-gray-800">{stop.businessName || stop.clientName}</div>
+                            <div className="flex items-center text-xs gap-1">
+                              <div className="text-gray-500">
+                                <Clock className="h-3 w-3 inline mr-1" />
+                                {stop.deliveryTime}
                               </div>
-                            </div>
-                            
-                            <div className="flex items-center text-xs text-gray-500 mt-1">
-                              <MapPin className="h-3 w-3 mr-1" />
-                              {stop.address}
-                            </div>
-                            
-                            <div className="flex justify-between items-center mt-2">
-                              <div className="flex items-center">
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-800">
-                                  {getStopTypeIcon(stop.stopType)}
-                                  <span className="ml-1 capitalize">{stop.stopType}</span>
-                                </span>
+                              <div 
+                                className="h-6 w-6 flex items-center justify-center text-gray-400 cursor-grab"
+                                onMouseDown={(e) => e.stopPropagation()}
+                              >
+                                <GripHorizontal className="h-3 w-3" />
                               </div>
-                              
-                              {stop.specialInstructions && (
-                                <div className="text-blue-500" title={stop.specialInstructions}>
-                                  <AlertCircle className="h-3 w-3" />
-                                </div>
-                              )}
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
+                          
+                          <div className="flex items-center text-xs text-gray-500 mt-1">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {stop.address}
+                          </div>
+                          
+                          <div className="flex justify-between items-center mt-2">
+                            <div className="flex items-center">
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-800">
+                                {getStopTypeIcon(stop.stopType)}
+                                <span className="ml-1 capitalize">{stop.stopType}</span>
+                              </span>
+                            </div>
+                            
+                            {stop.specialInstructions && (
+                              <div className="text-blue-500" title={stop.specialInstructions}>
+                                <AlertCircle className="h-3 w-3" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 };
