@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DeliveryStop, Driver } from '@/types';
 import { format } from 'date-fns';
@@ -55,16 +54,8 @@ const PrintableSchedule: React.FC<PrintableScheduleProps> = ({
       {driversWithStops.map(({ driver, stops }) => (
         <div key={driver.id} className="driver-schedule print-page">
           <div className="print-header">
-            <h1>Delivery Schedule</h1>
+            <h1>Delivery Schedule - {driver.name}</h1>
             <div className="print-date">{formattedDate}</div>
-            <div 
-              className="driver-name" 
-              style={{ borderLeft: `4px solid ${driver.color}`, paddingLeft: '8px' }}
-            >
-              <h2>{driver.name}</h2>
-              {driver.phoneNumber && <div className="driver-phone">{driver.phoneNumber}</div>}
-              {driver.vehicleType && <div className="driver-vehicle">{driver.vehicleType}</div>}
-            </div>
           </div>
 
           {stops.length === 0 ? (
