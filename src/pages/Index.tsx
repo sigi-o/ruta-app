@@ -8,7 +8,7 @@ import CsvImportModal from '@/components/CsvImportModal';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { CalendarIcon, Download, Upload, Printer, Save } from 'lucide-react';
 import { useSchedule } from '@/context/ScheduleContext';
 
@@ -21,9 +21,15 @@ const ScheduleManager: React.FC = () => {
     window.print();
   };
 
+  // Convert date to string format for the grid
+  const getFormattedDateString = () => {
+    return format(date, 'yyyy-MM-dd');
+  };
+
   // When the grid calls this function, we update the main date state
   const handleDateChange = (newDate: string) => {
-    setDate(new Date(newDate));
+    const parsedDate = new Date(newDate);
+    setDate(parsedDate);
   };
 
   // When the calendar calls this function, we update the main date state
@@ -160,7 +166,7 @@ const ScheduleManager: React.FC = () => {
                 className="w-[240px] justify-start text-left font-normal border-blue-200 text-blue-600 hover:bg-blue-50/50"
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {date ? format(date, "PPP") : <span>Pick a date</span>}
+                {format(date, "PPP")}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="center">
@@ -209,7 +215,7 @@ const ScheduleManager: React.FC = () => {
         {/* Center Panel - Schedule Grid */}
         <div className="w-3/5 bg-white rounded-lg shadow-sm overflow-hidden">
           <ScheduleGrid 
-            selectedDate={date.toISOString().split('T')[0]} 
+            selectedDate={getFormattedDateString()} 
             onDateChange={handleDateChange}
           />
         </div>
