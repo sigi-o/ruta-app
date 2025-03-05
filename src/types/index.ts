@@ -15,6 +15,7 @@ export interface DeliveryStop {
   clientName?: string;   // Now optional
   address: string;
   deliveryTime: string; // format: 'HH:MM'
+  deliveryDate: string; // format: 'YYYY-MM-DD'
   specialInstructions?: string;
   status: 'unassigned' | 'assigned';
   driverId?: string;

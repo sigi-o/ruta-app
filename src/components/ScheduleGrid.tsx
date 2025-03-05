@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
 import { Card } from '@/components/ui/card';
-import { MapPin, Clock, AlertCircle, Package, ShoppingBag, ChevronLeft, ChevronRight, GripHorizontal, Copy } from 'lucide-react';
+import { MapPin, Clock, AlertCircle, Package, ShoppingBag, ChevronLeft, ChevronRight, GripHorizontal, Copy, Calendar } from 'lucide-react';
 import { addDays, format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,7 @@ interface ScheduleGridProps {
 }
 
 const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange }) => {
-  const { scheduleDay, assignStop, unassignStop, updateStop, removeStop, editStop, duplicateStop } = useSchedule();
+  const { scheduleDay, assignStop, unassignStop, updateStop, removeStop, editStop, duplicateStop, getStopsForDate } = useSchedule();
   const [draggingStop, setDraggingStop] = useState<string | null>(null);
   const [expandedStopId, setExpandedStopId] = useState<string | null>(null);
   const { toast } = useToast();
@@ -84,16 +85,32 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
     if (!stop) return;
     
     if (source === 'unassigned') {
-      assignStop(stopId, driverId);
-      updateStop(stopId, { 
-        deliveryTime: timeSlot,
-        status: 'assigned'
-      });
-      
-      toast({
-        title: "Stop Assigned",
-        description: `${stop.businessName} assigned to ${scheduleDay.drivers.find(d => d.id === driverId)?.name}`,
-      });
+      // If the stop has a different date than the currently selected date
+      if (stop.deliveryDate !== selectedDate) {
+        // Update the stop's date to match the grid
+        updateStop(stopId, {
+          deliveryDate: selectedDate,
+          deliveryTime: timeSlot,
+          status: 'assigned',
+          driverId
+        });
+        
+        toast({
+          title: "Date Updated",
+          description: `${stop.businessName} date changed from ${stop.deliveryDate} to ${selectedDate}`,
+        });
+      } else {
+        assignStop(stopId, driverId);
+        updateStop(stopId, { 
+          deliveryTime: timeSlot,
+          status: 'assigned'
+        });
+        
+        toast({
+          title: "Stop Assigned",
+          description: `${stop.businessName} assigned to ${scheduleDay.drivers.find(d => d.id === driverId)?.name}`,
+        });
+      }
     } 
     else if (source === 'schedule') {
       if (stop.driverId !== driverId || stop.deliveryTime !== timeSlot) {
@@ -143,15 +160,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
     }
   };
 
-  const handleDuplicateStop = (e: React.MouseEvent, stopId: string) => {
-    e.stopPropagation();
-    duplicateStop(stopId);
-    toast({
-      title: "Stop Duplicated",
-      description: "A copy of the stop has been created and added to unassigned stops.",
-    });
-  };
-
   const getStopsByDriverAndTime = () => {
     const result: Record<string, Record<string, DeliveryStop[]>> = {};
     
@@ -164,7 +172,10 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
       });
     });
     
-    scheduleDay.stops.forEach(stop => {
+    // Only display stops that match the selected date
+    const stopsForCurrentDate = scheduleDay.stops.filter(stop => stop.deliveryDate === selectedDate);
+    
+    stopsForCurrentDate.forEach(stop => {
       if (stop.status === 'assigned' && stop.driverId) {
         const driver = scheduleDay.drivers.find(d => d.id === stop.driverId);
         if (driver && driver.available !== false) {
@@ -323,7 +334,9 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
                       {stopsByDriverAndTime[driver.id][timeSlot.time]?.map(stop => (
                         <div
                           key={stop.id}
-                          className={`delivery-item cursor-pointer ${draggingStop === stop.id ? 'opacity-50' : ''}`}
+                          className={`delivery-item cursor-pointer ${draggingStop === stop.id ? 'opacity-50' : ''} ${
+                            stop.deliveryDate !== selectedDate ? 'border-2 border-yellow-500' : ''
+                          }`}
                           style={{ backgroundColor: `${driver.color}15`, borderLeft: `3px solid ${driver.color}` }}
                           draggable="true"
                           onDragStart={(e) => handleDragStart(e, stop.id)}
@@ -349,6 +362,16 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
                           <div className="flex items-center text-xs text-gray-500 mt-1">
                             <MapPin className="h-3 w-3 mr-1" />
                             {stop.address}
+                          </div>
+
+                          <div className="flex items-center text-xs text-gray-500 mt-1">
+                            <Calendar className="h-3 w-3 mr-1" />
+                            {stop.deliveryDate}
+                            {stop.deliveryDate !== selectedDate && (
+                              <span className="ml-1 text-yellow-600 font-medium">
+                                (Different date!)
+                              </span>
+                            )}
                           </div>
                           
                           <div className="flex justify-between items-center mt-2">

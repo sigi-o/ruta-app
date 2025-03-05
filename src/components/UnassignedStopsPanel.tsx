@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSchedule, editStopEventChannel } from '@/context/ScheduleContext';
 import { DeliveryStop } from '@/types';
@@ -8,12 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { MapPin, Clock, Package, AlertCircle, Plus, Edit, Trash2, ShoppingBag, Shuffle, Phone, GripHorizontal, Copy } from 'lucide-react';
+import { MapPin, Clock, Package, AlertCircle, Plus, Edit, Trash2, ShoppingBag, Shuffle, Phone, GripHorizontal, Copy, Calendar } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
+import { format } from 'date-fns';
+import { useToast } from '@/context/ToastContext';
 
 const UnassignedStopsPanel: React.FC = () => {
-  const { scheduleDay, addStop, updateStop, removeStop, autoAssignStops, isLoading, editStop, duplicateStop } = useSchedule();
+  const { scheduleDay, addStop, updateStop, removeStop, autoAssignStops, isLoading, editStop, duplicateStop, selectedDate } = useSchedule();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentStop, setCurrentStop] = useState<DeliveryStop | null>(null);
@@ -22,10 +23,14 @@ const UnassignedStopsPanel: React.FC = () => {
     businessName: '',
     address: '',
     deliveryTime: '12:00',
+    deliveryDate: selectedDate,
     stopType: 'delivery',
   });
+  const { toast } = useToast();
 
-  const unassignedStops = scheduleDay.stops.filter(stop => stop.status === 'unassigned');
+  const unassignedStops = scheduleDay.stops.filter(stop => 
+    stop.status === 'unassigned' && stop.deliveryDate === selectedDate
+  );
 
   useEffect(() => {
     const handleEditStop = (e: Event) => {
@@ -42,6 +47,13 @@ const UnassignedStopsPanel: React.FC = () => {
       editStopEventChannel.removeEventListener('editStop', handleEditStop);
     };
   }, []);
+
+  useEffect(() => {
+    setNewStop(prev => ({
+      ...prev,
+      deliveryDate: selectedDate
+    }));
+  }, [selectedDate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -66,6 +78,7 @@ const UnassignedStopsPanel: React.FC = () => {
       businessName: '',
       address: '',
       deliveryTime: '12:00',
+      deliveryDate: selectedDate,
       stopType: 'delivery',
     });
     setIsAddModalOpen(false);
@@ -79,6 +92,15 @@ const UnassignedStopsPanel: React.FC = () => {
   const handleUpdateStop = () => {
     if (currentStop) {
       updateStop(currentStop.id, currentStop);
+      
+      if (currentStop.deliveryDate !== selectedDate) {
+        toast({
+          title: "Date Changed",
+          description: `This stop will be moved to ${currentStop.deliveryDate}, which is different from the current view.`,
+          variant: "warning"
+        });
+      }
+      
       setIsEditModalOpen(false);
       setCurrentStop(null);
     }
@@ -99,7 +121,6 @@ const UnassignedStopsPanel: React.FC = () => {
   const handleDragStart = (e: React.DragEvent, stop: DeliveryStop) => {
     console.log('Drag start in UnassignedStopsPanel:', stop.id);
     
-    // Set the data for transfer - make sure to stringify for Firefox compatibility
     e.dataTransfer.setData('text/plain', JSON.stringify({
       stopId: stop.id,
       source: 'unassigned'
@@ -182,6 +203,10 @@ const UnassignedStopsPanel: React.FC = () => {
                     <div className="flex items-center text-sm text-gray-600 mt-1">
                       <MapPin className="h-3.5 w-3.5 mr-1" />
                       {stop.address}
+                    </div>
+                    <div className="flex items-center text-sm text-gray-600 mt-1">
+                      <Calendar className="h-3.5 w-3.5 mr-1" />
+                      {stop.deliveryDate}
                     </div>
                     {stop.contactPhone && (
                       <div className="flex items-center text-sm text-gray-600 mt-1">
@@ -329,6 +354,18 @@ const UnassignedStopsPanel: React.FC = () => {
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
+                <Label htmlFor="deliveryDate">Delivery Date <span className="text-red-500">*</span></Label>
+                <Input
+                  id="deliveryDate"
+                  name="deliveryDate"
+                  type="date"
+                  value={newStop.deliveryDate}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
                 <Label htmlFor="deliveryTime">Delivery Time <span className="text-red-500">*</span></Label>
                 <Select
                   value={newStop.deliveryTime}
@@ -347,24 +384,24 @@ const UnassignedStopsPanel: React.FC = () => {
                   </SelectContent>
                 </Select>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="stopType">Stop Type <span className="text-red-500">*</span></Label>
-                <Select
-                  value={newStop.stopType}
-                  onValueChange={(value) => handleSelectChange('stopType', value)}
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="delivery">Delivery</SelectItem>
-                    <SelectItem value="pickup">Pickup</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="stopType">Stop Type <span className="text-red-500">*</span></Label>
+              <Select
+                value={newStop.stopType}
+                onValueChange={(value) => handleSelectChange('stopType', value)}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="delivery">Delivery</SelectItem>
+                  <SelectItem value="pickup">Pickup</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="space-y-2">
@@ -385,7 +422,7 @@ const UnassignedStopsPanel: React.FC = () => {
             </Button>
             <Button 
               onClick={handleAddStop} 
-              disabled={!newStop.businessName || !newStop.address || !newStop.deliveryTime || !newStop.stopType}
+              disabled={!newStop.businessName || !newStop.address || !newStop.deliveryTime || !newStop.stopType || !newStop.deliveryDate}
               className="bg-blue-600 hover:bg-blue-700"
             >
               Add Stop
@@ -452,6 +489,24 @@ const UnassignedStopsPanel: React.FC = () => {
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
+                  <Label htmlFor="editDeliveryDate">Delivery Date <span className="text-red-500">*</span></Label>
+                  <Input
+                    id="editDeliveryDate"
+                    name="deliveryDate"
+                    type="date"
+                    value={currentStop.deliveryDate}
+                    onChange={handleInputChange}
+                    required
+                  />
+                  {currentStop.deliveryDate !== selectedDate && (
+                    <p className="text-xs text-yellow-600 mt-1">
+                      <AlertCircle className="h-3 w-3 inline mr-1" />
+                      This date differs from the current view date ({selectedDate})
+                    </p>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
                   <Label htmlFor="deliveryTime">Delivery Time <span className="text-red-500">*</span></Label>
                   <Select
                     value={currentStop.deliveryTime}
@@ -470,24 +525,24 @@ const UnassignedStopsPanel: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="stopType">Stop Type <span className="text-red-500">*</span></Label>
-                  <Select
-                    value={currentStop.stopType}
-                    onValueChange={(value) => handleSelectChange('stopType', value)}
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="delivery">Delivery</SelectItem>
-                      <SelectItem value="pickup">Pickup</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="stopType">Stop Type <span className="text-red-500">*</span></Label>
+                <Select
+                  value={currentStop.stopType}
+                  onValueChange={(value) => handleSelectChange('stopType', value)}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="delivery">Delivery</SelectItem>
+                    <SelectItem value="pickup">Pickup</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               
               <div className="space-y-2">
@@ -535,7 +590,7 @@ const UnassignedStopsPanel: React.FC = () => {
               </Button>
               <Button 
                 onClick={handleUpdateStop} 
-                disabled={!currentStop?.businessName || !currentStop?.address || !currentStop?.deliveryTime || !currentStop?.stopType}
+                disabled={!currentStop?.businessName || !currentStop?.address || !currentStop?.deliveryTime || !currentStop?.stopType || !currentStop?.deliveryDate}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 Update Stop

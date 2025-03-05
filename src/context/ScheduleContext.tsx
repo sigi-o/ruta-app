@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect, useRef } from 'r
 import { Driver, DeliveryStop, TimeSlot, ScheduleDay } from '@/types';
 import { generateTimeSlots } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 
 interface ScheduleContextType {
   scheduleDay: ScheduleDay;
@@ -20,9 +21,13 @@ interface ScheduleContextType {
   isLoading: boolean;
   editStop: (stopId: string) => void;
   duplicateStop: (stopId: string) => void;
+  setSelectedDate: (date: string) => void;
+  selectedDate: string;
+  getStopsForDate: (date: string) => DeliveryStop[];
 }
 
 const defaultTimeSlots = generateTimeSlots('07:00', '19:00', 30);
+const today = format(new Date(), 'yyyy-MM-dd');
 
 const defaultDrivers: Driver[] = [
   { id: '1', name: 'John Smith', color: '#3B82F6', available: true },
@@ -39,6 +44,7 @@ const defaultStops: DeliveryStop[] = [
     clientName: 'John Doe',
     address: '123 Business Ave',
     deliveryTime: '10:00',
+    deliveryDate: today,
     status: 'unassigned',
     orderNumber: 'ORD-001',
     stopType: 'delivery',
@@ -49,6 +55,7 @@ const defaultStops: DeliveryStop[] = [
     clientName: 'Jane Smith',
     address: '456 Innovation Blvd',
     deliveryTime: '11:30',
+    deliveryDate: today,
     status: 'unassigned',
     orderNumber: 'ORD-002',
     stopType: 'delivery',
@@ -59,6 +66,7 @@ const defaultStops: DeliveryStop[] = [
     clientName: 'Robert Johnson',
     address: '789 Main St',
     deliveryTime: '12:00',
+    deliveryDate: today,
     status: 'unassigned',
     orderNumber: 'ORD-003',
     stopType: 'delivery',
@@ -68,6 +76,7 @@ const defaultStops: DeliveryStop[] = [
     businessName: 'City Butcher',
     address: '321 Meat Lane',
     deliveryTime: '08:30',
+    deliveryDate: today,
     status: 'unassigned',
     orderNumber: 'ORD-004',
     stopType: 'other',
@@ -78,6 +87,7 @@ const defaultStops: DeliveryStop[] = [
     businessName: 'Party Supply Co',
     address: '555 Event Road',
     deliveryTime: '09:00',
+    deliveryDate: today,
     status: 'unassigned',
     orderNumber: 'ORD-005',
     stopType: 'other',
@@ -86,7 +96,7 @@ const defaultStops: DeliveryStop[] = [
 ];
 
 const defaultScheduleDay: ScheduleDay = {
-  date: new Date().toISOString().split('T')[0],
+  date: today,
   drivers: defaultDrivers,
   stops: defaultStops,
   timeSlots: defaultTimeSlots,
@@ -99,6 +109,7 @@ const editStopEventChannel = new EventTarget();
 export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [scheduleDay, setScheduleDay] = useState<ScheduleDay>(defaultScheduleDay);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>(today);
   const { toast } = useToast();
   const initialLoadComplete = useRef(false);
 
@@ -124,6 +135,10 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       window.removeEventListener('editStop', handleEditStopEvent);
     };
   }, [scheduleDay.stops]);
+
+  const getStopsForDate = (date: string) => {
+    return scheduleDay.stops.filter(stop => stop.deliveryDate === date);
+  };
 
   const addDriver = (driver: Omit<Driver, 'id'>) => {
     const newDriver: Driver = {
@@ -197,21 +212,47 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ...stop,
       id: `stop-${Date.now()}`,
       status: 'unassigned',
+      deliveryDate: stop.deliveryDate || selectedDate,
     };
 
     setScheduleDay(prev => ({
       ...prev,
       stops: [...prev.stops, newStop],
     }));
+
+    if (newStop.deliveryDate !== selectedDate) {
+      toast({
+        title: "Different Delivery Date",
+        description: `This stop is scheduled for ${newStop.deliveryDate}, not the currently selected date (${selectedDate}).`,
+        variant: "warning",
+      });
+    }
   };
 
   const updateStop = (stopId: string, updatedStop: Partial<DeliveryStop>) => {
-    setScheduleDay(prev => ({
-      ...prev,
-      stops: prev.stops.map(stop => 
+    setScheduleDay(prev => {
+      const originalStop = prev.stops.find(s => s.id === stopId);
+      const isDateChanging = updatedStop.deliveryDate && originalStop?.deliveryDate !== updatedStop.deliveryDate;
+      
+      const updatedStops = prev.stops.map(stop => 
         stop.id === stopId ? { ...stop, ...updatedStop } : stop
-      ),
-    }));
+      );
+      
+      if (isDateChanging && updatedStop.deliveryDate !== selectedDate) {
+        setTimeout(() => {
+          toast({
+            title: "Date Changed",
+            description: `Stop date changed to ${updatedStop.deliveryDate}, which differs from current view (${selectedDate}).`,
+            variant: "warning",
+          });
+        }, 0);
+      }
+      
+      return {
+        ...prev,
+        stops: updatedStops,
+      };
+    });
   };
 
   const removeStop = (stopId: string) => {
@@ -370,6 +411,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         clientName: row.clientName || row.customer_name || row.client || '',
         address: row.address || row.delivery_address || row.location || '',
         deliveryTime: row.deliveryTime || row.delivery_time || row.time || '12:00',
+        deliveryDate: row.deliveryDate || row.delivery_date || row.date || selectedDate,
         status: 'unassigned' as const,
         orderNumber: row.orderNumber || row.order_number || row.order_id || `ORD-${index + 100}`,
         contactPhone: row.contactPhone || row.phone || row.contact || '',
@@ -443,7 +485,10 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       importCsvData,
       isLoading,
       editStop,
-      duplicateStop
+      duplicateStop,
+      selectedDate,
+      setSelectedDate,
+      getStopsForDate
     }}>
       {children}
     </ScheduleContext.Provider>
