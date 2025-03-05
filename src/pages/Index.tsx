@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { ScheduleProvider } from '@/context/ScheduleContext';
 import DriverPanel from '@/components/DriverPanel';
@@ -9,7 +8,7 @@ import PrintableSchedule from '@/components/PrintableSchedule';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { CalendarIcon, Download, Upload, Printer, Save } from 'lucide-react';
 import { useSchedule } from '@/context/ScheduleContext';
 
@@ -23,17 +22,14 @@ const ScheduleManager: React.FC = () => {
   const handlePrint = () => {
     setIsPrintView(true);
     
-    // Use setTimeout to ensure the print view is rendered before printing
     printTimeoutRef.current = window.setTimeout(() => {
       window.print();
-      // Set a timeout to hide print view after printing
       printTimeoutRef.current = window.setTimeout(() => {
         setIsPrintView(false);
       }, 500);
     }, 300);
   };
 
-  // Clean up any timeouts on unmount
   useEffect(() => {
     return () => {
       if (printTimeoutRef.current) {
@@ -42,45 +38,44 @@ const ScheduleManager: React.FC = () => {
     };
   }, []);
 
-  // Convert date to string format for the grid
   const getFormattedDateString = () => {
     return format(date, 'yyyy-MM-dd');
   };
 
-  // When the grid calls this function, we update the main date state
   const handleDateChange = (newDateString: string) => {
+    console.log(`Index received new date from child: ${newDateString}`);
+    
     try {
-      const parsedDate = new Date(newDateString);
-      // Ensure this is a valid date before updating state
-      if (!isNaN(parsedDate.getTime())) {
-        setDate(parsedDate);
-        // Update the context with the new date
-        setSelectedDate(newDateString);
-        console.log("Date updated from grid:", format(parsedDate, 'yyyy-MM-dd'));
-      } else {
-        console.error("Invalid date format received from grid:", newDateString);
+      const parsedDate = parse(newDateString, 'yyyy-MM-dd', new Date());
+      
+      if (isNaN(parsedDate.getTime())) {
+        console.error("Received invalid date string:", newDateString);
+        return;
       }
+      
+      setDate(parsedDate);
+      console.log(`Updating context with date: ${newDateString}`);
+      setSelectedDate(newDateString);
     } catch (error) {
-      console.error("Error parsing date from grid:", error);
+      console.error("Error processing date change:", error);
     }
   };
 
-  // When the calendar calls this function, we update the main date state
   const handleCalendarSelect = (selectedDate: Date | undefined) => {
-    if (selectedDate) {
+    if (selectedDate && !isNaN(selectedDate.getTime())) {
       setDate(selectedDate);
       const dateString = format(selectedDate, 'yyyy-MM-dd');
+      console.log(`Calendar selected new date: ${dateString}`);
       setSelectedDate(dateString);
-      console.log("Date updated from calendar:", format(selectedDate, 'yyyy-MM-dd'));
+    } else {
+      console.error("Invalid date selected from calendar");
     }
   };
 
-  // Log when the date state changes to help with debugging
   useEffect(() => {
     console.log("Current date state:", format(date, 'yyyy-MM-dd'));
   }, [date]);
 
-  // Add global styles for drag and drop and print view
   useEffect(() => {
     const style = document.createElement('style');
     style.textContent = `
@@ -290,7 +285,6 @@ const ScheduleManager: React.FC = () => {
     };
   }, []);
 
-  // If in print view, only render the printable schedule
   if (isPrintView) {
     return (
       <div className="print-only">
@@ -305,7 +299,6 @@ const ScheduleManager: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen">
-      {/* Header */}
       <header className="bg-white p-4 text-blue-600 flex items-center justify-between shadow-sm print:hidden">
         <div>
           <h1 className="text-2xl font-bold">Catering Flow Manager</h1>
@@ -359,28 +352,23 @@ const ScheduleManager: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Content - 3 Panel Layout */}
       <div className="flex-grow flex p-4 gap-4 overflow-hidden print:overflow-visible">
-        {/* Left Panel - Drivers */}
         <div className="w-1/5 bg-white rounded-lg shadow-sm overflow-hidden print:hidden">
           <DriverPanel />
         </div>
         
-        {/* Center Panel - Schedule Grid */}
         <div className="w-3/5 bg-white rounded-lg shadow-sm overflow-hidden">
           <ScheduleGrid 
             selectedDate={getFormattedDateString()} 
-            onDateChange={handleDateChange} 
+            onDateChange={handleDateChange}
           />
         </div>
         
-        {/* Right Panel - Unassigned Stops */}
         <div className="w-1/5 bg-white rounded-lg shadow-sm overflow-hidden print:hidden">
           <UnassignedStopsPanel />
         </div>
       </div>
       
-      {/* Import Modal */}
       {isImportModalOpen && (
         <CsvImportModal 
           isOpen={isImportModalOpen} 

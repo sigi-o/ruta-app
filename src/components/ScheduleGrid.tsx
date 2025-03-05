@@ -3,7 +3,7 @@ import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
 import { Card } from '@/components/ui/card';
 import { MapPin, Clock, AlertCircle, Package, ShoppingBag, ChevronLeft, ChevronRight, GripHorizontal, Copy, Calendar } from 'lucide-react';
-import { addDays, format } from 'date-fns';
+import { addDays, format, parse } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 
@@ -239,17 +239,20 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
 
   const goToPreviousDay = () => {
     try {
-      const date = new Date(selectedDate);
-      if (!isNaN(date.getTime())) {
-        // Calculate previous day (one day back)
-        const newDate = addDays(date, -1);
-        const newDateString = format(newDate, 'yyyy-MM-dd');
-        console.log("Going to previous day:", newDateString);
-        // Send the new date string directly to parent component
-        onDateChange(newDateString);
-      } else {
-        console.error("Invalid date for previous day navigation:", selectedDate);
+      const currentDate = parse(selectedDate, 'yyyy-MM-dd', new Date());
+      
+      if (isNaN(currentDate.getTime())) {
+        console.error("Cannot navigate: Invalid current date");
+        return;
       }
+      
+      const previousDate = addDays(currentDate, -1);
+      
+      const previousDateString = format(previousDate, 'yyyy-MM-dd');
+      
+      console.log(`Navigation: Going from ${selectedDate} to previous day ${previousDateString}`);
+      
+      onDateChange(previousDateString);
     } catch (error) {
       console.error("Error navigating to previous day:", error);
     }
@@ -257,17 +260,20 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
 
   const goToNextDay = () => {
     try {
-      const date = new Date(selectedDate);
-      if (!isNaN(date.getTime())) {
-        // Calculate next day (one day forward)
-        const newDate = addDays(date, 1);
-        const newDateString = format(newDate, 'yyyy-MM-dd');
-        console.log("Going to next day:", newDateString);
-        // Send the new date string directly to parent component
-        onDateChange(newDateString);
-      } else {
-        console.error("Invalid date for next day navigation:", selectedDate);
+      const currentDate = parse(selectedDate, 'yyyy-MM-dd', new Date());
+      
+      if (isNaN(currentDate.getTime())) {
+        console.error("Cannot navigate: Invalid current date");
+        return;
       }
+      
+      const nextDate = addDays(currentDate, 1);
+      
+      const nextDateString = format(nextDate, 'yyyy-MM-dd');
+      
+      console.log(`Navigation: Going from ${selectedDate} to next day ${nextDateString}`);
+      
+      onDateChange(nextDateString);
     } catch (error) {
       console.error("Error navigating to next day:", error);
     }
