@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSchedule, editStopEventChannel } from '@/context/ScheduleContext';
 import { DeliveryStop } from '@/types';
@@ -487,6 +488,14 @@ const UnassignedStopsPanel: React.FC = () => {
             </div>
           )}
           <DialogFooter className="flex justify-between">
+            <Button 
+              variant="destructive"
+              onClick={() => handleDeleteStop(currentStop?.id || '')}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </Button>
             <div className="flex space-x-2">
               <Button 
                 variant="outline" 
@@ -494,22 +503,14 @@ const UnassignedStopsPanel: React.FC = () => {
               >
                 Cancel
               </Button>
-              <Button
-                variant="destructive"
-                onClick={() => handleDeleteStop(currentStop?.id || '')}
-                className="bg-red-600 hover:bg-red-700"
+              <Button 
+                onClick={handleUpdateStop} 
+                disabled={!currentStop?.businessName || !currentStop?.address || !currentStop?.deliveryTime || !currentStop?.stopType}
+                className="bg-blue-600 hover:bg-blue-700"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
+                Update Stop
               </Button>
             </div>
-            <Button 
-              onClick={handleUpdateStop} 
-              disabled={!currentStop?.businessName || !currentStop?.address || !currentStop?.deliveryTime || !currentStop?.stopType}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              Update Stop
-            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
