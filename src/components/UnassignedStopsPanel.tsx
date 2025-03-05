@@ -97,8 +97,13 @@ const UnassignedStopsPanel: React.FC = () => {
   };
 
   const handleDragStart = (e: React.DragEvent, stop: DeliveryStop) => {
-    e.dataTransfer.setData('stopId', stop.id);
-    e.dataTransfer.setData('source', 'unassigned');
+    console.log('Drag start in UnassignedStopsPanel:', stop.id);
+    
+    // Set the data for transfer - make sure to stringify for Firefox compatibility
+    e.dataTransfer.setData('text/plain', JSON.stringify({
+      stopId: stop.id,
+      source: 'unassigned'
+    }));
     e.dataTransfer.effectAllowed = 'move';
     setDraggingStop(stop.id);
     
@@ -163,7 +168,7 @@ const UnassignedStopsPanel: React.FC = () => {
               <div
                 key={stop.id}
                 className={`unassigned-stop cursor-grab ${draggingStop === stop.id ? 'opacity-50' : ''}`}
-                draggable
+                draggable="true"
                 onDragStart={(e) => handleDragStart(e, stop)}
                 onDragEnd={handleDragEnd}
                 onClick={() => handleEditStop(stop)}

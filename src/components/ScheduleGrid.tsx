@@ -17,9 +17,12 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
   const { toast } = useToast();
 
   const handleDragStart = (e: React.DragEvent, stopId: string) => {
-    // Set the data for transfer
-    e.dataTransfer.setData('stopId', stopId);
-    e.dataTransfer.setData('source', 'schedule');
+    console.log('Drag start in ScheduleGrid:', stopId);
+    // Set the data for transfer - make sure to stringify for Firefox compatibility
+    e.dataTransfer.setData('text/plain', JSON.stringify({
+      stopId: stopId,
+      source: 'schedule'
+    }));
     e.dataTransfer.effectAllowed = 'move';
     setDraggingStop(stopId);
 
@@ -57,12 +60,24 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
 
   const handleDrop = (e: React.DragEvent, driverId: string, timeSlot: string) => {
     e.preventDefault();
+    console.log('Drop in ScheduleGrid:', driverId, timeSlot);
     
     const target = e.currentTarget as HTMLElement;
     target.classList.remove('drop-target');
     
-    const stopId = e.dataTransfer.getData('stopId');
-    const source = e.dataTransfer.getData('source');
+    let stopId = '';
+    let source = '';
+    
+    try {
+      // Parse the stringified data for Firefox compatibility
+      const dataTransfer = JSON.parse(e.dataTransfer.getData('text/plain'));
+      stopId = dataTransfer.stopId;
+      source = dataTransfer.source;
+      console.log('Parsed data transfer:', dataTransfer);
+    } catch (error) {
+      console.error('Error parsing drag data:', error);
+      return;
+    }
     
     if (!stopId) return;
     
@@ -287,7 +302,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
                           key={stop.id}
                           className={`delivery-item cursor-grab ${draggingStop === stop.id ? 'opacity-50' : ''}`}
                           style={{ backgroundColor: `${driver.color}15`, borderLeft: `3px solid ${driver.color}` }}
-                          draggable
+                          draggable="true"
                           onDragStart={(e) => handleDragStart(e, stop.id)}
                           onDragEnd={() => setDraggingStop(null)}
                           onClick={() => editStop(stop.id)}

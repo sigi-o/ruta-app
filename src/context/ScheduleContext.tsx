@@ -1,4 +1,5 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { Driver, DeliveryStop, TimeSlot, ScheduleDay } from '@/types';
 import { generateTimeSlots } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -99,9 +100,14 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [scheduleDay, setScheduleDay] = useState<ScheduleDay>(defaultScheduleDay);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const initialLoadComplete = useRef(false);
 
   useEffect(() => {
-    loadSavedSchedule();
+    // Only load the saved schedule once when the component mounts
+    if (!initialLoadComplete.current) {
+      loadSavedSchedule();
+      initialLoadComplete.current = true;
+    }
     
     const handleEditStopEvent = (e: Event) => {
       const customEvent = e as CustomEvent;
@@ -272,12 +278,15 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           .map(d => d.id);
         
         if (availableDriverIds.length === 0) {
-          toast({
-            title: "No Available Drivers",
-            description: "There are no available drivers to assign stops to.",
-            variant: "destructive",
-          });
-          setIsLoading(false);
+          // Using setTimeout to avoid state updates during render
+          setTimeout(() => {
+            toast({
+              title: "No Available Drivers",
+              description: "There are no available drivers to assign stops to.",
+              variant: "destructive",
+            });
+          }, 0);
+          
           return prev;
         }
         
@@ -308,27 +317,40 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       });
       
       setIsLoading(false);
-      toast({
-        title: "Auto-Assignment Complete",
-        description: "Stops have been automatically assigned to available drivers based on delivery times.",
-      });
+      
+      // Using setTimeout to avoid state updates during render
+      setTimeout(() => {
+        toast({
+          title: "Auto-Assignment Complete",
+          description: "Stops have been automatically assigned to available drivers based on delivery times.",
+        });
+      }, 0);
+      
     }, 800);
   };
 
   const saveSchedule = () => {
     try {
       localStorage.setItem('catering-schedule', JSON.stringify(scheduleDay));
-      toast({
-        title: "Schedule Saved",
-        description: "Your schedule has been saved successfully.",
-      });
+      
+      // Using setTimeout to avoid state updates during render
+      setTimeout(() => {
+        toast({
+          title: "Schedule Saved",
+          description: "Your schedule has been saved successfully.",
+        });
+      }, 0);
     } catch (error) {
       console.error('Error saving schedule:', error);
-      toast({
-        title: "Error Saving Schedule",
-        description: "There was an error saving your schedule. Please try again.",
-        variant: "destructive",
-      });
+      
+      // Using setTimeout to avoid state updates during render
+      setTimeout(() => {
+        toast({
+          title: "Error Saving Schedule",
+          description: "There was an error saving your schedule. Please try again.",
+          variant: "destructive",
+        });
+      }, 0);
     }
   };
 
