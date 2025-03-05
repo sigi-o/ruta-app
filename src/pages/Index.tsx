@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { ScheduleProvider } from '@/context/ScheduleContext';
 import DriverPanel from '@/components/DriverPanel';
@@ -53,6 +54,7 @@ const ScheduleManager: React.FC = () => {
       // Ensure this is a valid date before updating state
       if (!isNaN(parsedDate.getTime())) {
         setDate(parsedDate);
+        // Update the context with the new date
         console.log("Date updated from grid:", format(parsedDate, 'yyyy-MM-dd'));
       } else {
         console.error("Invalid date format received from grid:", newDateString);
