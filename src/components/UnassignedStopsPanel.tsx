@@ -11,7 +11,7 @@ import { MapPin, Clock, Package, AlertCircle, Plus, Edit, Trash2, ShoppingBag, S
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
-import { useToast } from '@/context/ToastContext';
+import { useToast } from '@/hooks/use-toast';
 
 const UnassignedStopsPanel: React.FC = () => {
   const { scheduleDay, addStop, updateStop, removeStop, autoAssignStops, isLoading, editStop, duplicateStop, selectedDate } = useSchedule();

@@ -224,7 +224,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       toast({
         title: "Different Delivery Date",
         description: `This stop is scheduled for ${newStop.deliveryDate}, not the currently selected date (${selectedDate}).`,
-        variant: "warning",
+        variant: "destructive",
       });
     }
   };
@@ -243,7 +243,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           toast({
             title: "Date Changed",
             description: `Stop date changed to ${updatedStop.deliveryDate}, which differs from current view (${selectedDate}).`,
-            variant: "warning",
+            variant: "destructive",
           });
         }, 0);
       }
