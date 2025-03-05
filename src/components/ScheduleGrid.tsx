@@ -3,15 +3,15 @@ import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
 import { Card } from '@/components/ui/card';
 import { MapPin, Clock, AlertCircle, Package, ShoppingBag, ChevronLeft, ChevronRight, GripHorizontal } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { addDays, format, parseISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
 interface ScheduleGridProps {
   selectedDate: string;
+  onDateChange: (date: string) => void;
 }
 
-const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
+const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange }) => {
   const { scheduleDay, assignStop, unassignStop, updateStop, removeStop, editStop } = useSchedule();
   const [draggingStop, setDraggingStop] = useState<string | null>(null);
   const { toast } = useToast();
@@ -151,18 +151,14 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
     const date = parseISO(selectedDate);
     const newDate = addDays(date, -1);
     const newDateString = format(newDate, 'yyyy-MM-dd');
-    const searchParams = new URLSearchParams(window.location.search);
-    searchParams.set('date', newDateString);
-    window.location.search = searchParams.toString();
+    onDateChange(newDateString);
   };
 
   const goToNextDay = () => {
     const date = parseISO(selectedDate);
     const newDate = addDays(date, 1);
     const newDateString = format(newDate, 'yyyy-MM-dd');
-    const searchParams = new URLSearchParams(window.location.search);
-    searchParams.set('date', newDateString);
-    window.location.search = searchParams.toString();
+    onDateChange(newDateString);
   };
 
   const formattedDate = format(parseISO(selectedDate), 'EEEE, MMMM d, yyyy');
@@ -214,7 +210,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
       </div>
 
       <div className="flex-grow overflow-auto">
-        <div className="schedule-container">
+        <div className="schedule-container overflow-auto">
           <div className="schedule-header sticky top-0 z-10 flex">
             <div className="time-header">
               Time

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ScheduleProvider } from '@/context/ScheduleContext';
 import DriverPanel from '@/components/DriverPanel';
@@ -18,6 +19,16 @@ const ScheduleManager: React.FC = () => {
   
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDateChange = (newDate: string) => {
+    setDate(new Date(newDate));
+  };
+
+  const handleCalendarSelect = (selectedDate: Date | undefined) => {
+    if (selectedDate) {
+      setDate(selectedDate);
+    }
   };
 
   useEffect(() => {
@@ -154,7 +165,7 @@ const ScheduleManager: React.FC = () => {
               <Calendar
                 mode="single"
                 selected={date}
-                onSelect={(date) => date && setDate(date)}
+                onSelect={handleCalendarSelect}
                 initialFocus
               />
             </PopoverContent>
@@ -195,7 +206,10 @@ const ScheduleManager: React.FC = () => {
         
         {/* Center Panel - Schedule Grid */}
         <div className="w-3/5 bg-white rounded-lg shadow-sm overflow-hidden">
-          <ScheduleGrid selectedDate={date.toISOString().split('T')[0]} />
+          <ScheduleGrid 
+            selectedDate={date.toISOString().split('T')[0]} 
+            onDateChange={handleDateChange}
+          />
         </div>
         
         {/* Right Panel - Unassigned Stops */}
