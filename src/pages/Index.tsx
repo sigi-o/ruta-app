@@ -17,7 +17,7 @@ const ScheduleManager: React.FC = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isPrintView, setIsPrintView] = useState(false);
-  const { autoAssignStops, saveSchedule, isLoading, scheduleDay } = useSchedule();
+  const { autoAssignStops, saveSchedule, isLoading, scheduleDay, setSelectedDate } = useSchedule();
   const printTimeoutRef = useRef<number | null>(null);
   
   const handlePrint = () => {
@@ -55,6 +55,7 @@ const ScheduleManager: React.FC = () => {
       if (!isNaN(parsedDate.getTime())) {
         setDate(parsedDate);
         // Update the context with the new date
+        setSelectedDate(newDateString);
         console.log("Date updated from grid:", format(parsedDate, 'yyyy-MM-dd'));
       } else {
         console.error("Invalid date format received from grid:", newDateString);
@@ -68,6 +69,8 @@ const ScheduleManager: React.FC = () => {
   const handleCalendarSelect = (selectedDate: Date | undefined) => {
     if (selectedDate) {
       setDate(selectedDate);
+      const dateString = format(selectedDate, 'yyyy-MM-dd');
+      setSelectedDate(dateString);
       console.log("Date updated from calendar:", format(selectedDate, 'yyyy-MM-dd'));
     }
   };

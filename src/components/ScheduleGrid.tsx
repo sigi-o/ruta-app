@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
@@ -246,7 +245,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
         const newDate = addDays(date, -1);
         const newDateString = format(newDate, 'yyyy-MM-dd');
         console.log("Going to previous day:", newDateString);
-        // Update parent component with new date
+        // Send the new date string directly to parent component
         onDateChange(newDateString);
       } else {
         console.error("Invalid date for previous day navigation:", selectedDate);
@@ -264,7 +263,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
         const newDate = addDays(date, 1);
         const newDateString = format(newDate, 'yyyy-MM-dd');
         console.log("Going to next day:", newDateString);
-        // Update parent component with new date
+        // Send the new date string directly to parent component
         onDateChange(newDateString);
       } else {
         console.error("Invalid date for next day navigation:", selectedDate);
