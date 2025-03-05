@@ -216,7 +216,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
 
       <ScrollArea className="flex-grow">
         <div className="schedule-container">
-          <ScrollArea orientation="horizontal" className="w-full">
+          <div className="w-full overflow-x-auto">
             <div className="sticky top-0 z-10 flex">
               <div className="time-header">
                 Time
@@ -304,7 +304,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate }) => {
                 </div>
               ))}
             </div>
-          </ScrollArea>
+          </div>
         </div>
       </ScrollArea>
     </div>
