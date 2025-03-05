@@ -1,10 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
 import { Card } from '@/components/ui/card';
-import { MapPin, Clock, AlertCircle, Package, ShoppingBag, ChevronLeft, ChevronRight, GripHorizontal } from 'lucide-react';
+import { MapPin, Clock, AlertCircle, Package, ShoppingBag, ChevronLeft, ChevronRight, GripHorizontal, Copy } from 'lucide-react';
 import { addDays, format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 interface ScheduleGridProps {
   selectedDate: string;
@@ -12,8 +14,9 @@ interface ScheduleGridProps {
 }
 
 const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange }) => {
-  const { scheduleDay, assignStop, unassignStop, updateStop, removeStop, editStop } = useSchedule();
+  const { scheduleDay, assignStop, unassignStop, updateStop, removeStop, editStop, duplicateStop } = useSchedule();
   const [draggingStop, setDraggingStop] = useState<string | null>(null);
+  const [expandedStopId, setExpandedStopId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleDragStart = (e: React.DragEvent, stopId: string) => {
@@ -135,6 +138,24 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
     }
   };
 
+  const handleStopClick = (stopId: string) => {
+    if (expandedStopId === stopId) {
+      setExpandedStopId(null);
+    } else {
+      setExpandedStopId(stopId);
+      editStop(stopId);
+    }
+  };
+
+  const handleDuplicateStop = (e: React.MouseEvent, stopId: string) => {
+    e.stopPropagation(); // Prevent the click from triggering the parent card's click
+    duplicateStop(stopId);
+    toast({
+      title: "Stop Duplicated",
+      description: "A copy of the stop has been created and added to unassigned stops.",
+    });
+  };
+
   const getStopsByDriverAndTime = () => {
     const result: Record<string, Record<string, DeliveryStop[]>> = {};
     
@@ -181,6 +202,12 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
       .delivery-item:hover, .unassigned-stop:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      }
+
+      .expanded-stop-actions {
+        padding-top: 0.5rem;
+        margin-top: 0.5rem;
+        border-top: 1px dashed #e5e7eb;
       }
     `;
     document.head.appendChild(style);
@@ -300,12 +327,12 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
                       {stopsByDriverAndTime[driver.id][timeSlot.time]?.map(stop => (
                         <div
                           key={stop.id}
-                          className={`delivery-item cursor-grab ${draggingStop === stop.id ? 'opacity-50' : ''}`}
+                          className={`delivery-item cursor-pointer ${draggingStop === stop.id ? 'opacity-50' : ''}`}
                           style={{ backgroundColor: `${driver.color}15`, borderLeft: `3px solid ${driver.color}` }}
                           draggable="true"
                           onDragStart={(e) => handleDragStart(e, stop.id)}
                           onDragEnd={() => setDraggingStop(null)}
-                          onClick={() => editStop(stop.id)}
+                          onClick={() => handleStopClick(stop.id)}
                         >
                           <div className="flex justify-between items-start">
                             <div className="font-medium text-gray-800">{stop.businessName || stop.clientName}</div>
@@ -342,6 +369,21 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
                               </div>
                             )}
                           </div>
+
+                          {/* Expanded section with duplicate button */}
+                          {expandedStopId === stop.id && (
+                            <div className="expanded-stop-actions">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="w-full text-xs" 
+                                onClick={(e) => handleDuplicateStop(e, stop.id)}
+                              >
+                                <Copy className="h-3 w-3 mr-1" />
+                                Duplicate Stop
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
