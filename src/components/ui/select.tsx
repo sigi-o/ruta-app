@@ -74,18 +74,22 @@ const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        "z-50 bg-popover border rounded-md shadow-md text-popover-foreground",
+        "relative z-50 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md",
         className
       )}
       position={position}
       {...props}
     >
       <SelectScrollUpButton />
-      <SelectPrimitive.Viewport 
+      <SelectPrimitive.Viewport
         className={cn(
           "p-1",
-          position === "popper" && "min-w-[var(--radix-select-trigger-width)] w-full max-h-[200px]"
+          position === "popper" && "min-w-[var(--radix-select-trigger-width)] w-full h-[var(--radix-select-content-available-height)]"
         )}
+        style={{ 
+          maxHeight: "var(--radix-select-content-available-height)",
+          overflowY: "auto" 
+        }}
       >
         {children}
       </SelectPrimitive.Viewport>
