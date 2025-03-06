@@ -270,6 +270,8 @@ const ScheduleGrid: React.FC = () => {
     );
   }
 
+  const allTimeSlots = scheduleDay.timeSlots;
+
   return (
     <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
       <div className="card-header flex items-center justify-between p-4">
@@ -315,7 +317,7 @@ const ScheduleGrid: React.FC = () => {
           </div>
 
           <div className="schedule-body">
-            {scheduleDay.timeSlots.map(timeSlot => (
+            {allTimeSlots.map(timeSlot => (
               <div key={timeSlot.time} className="time-row">
                 <div className="time-label">
                   {timeSlot.label}
