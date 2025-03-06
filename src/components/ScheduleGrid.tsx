@@ -383,7 +383,7 @@ const ScheduleGrid: React.FC = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .schedule-container {
           display: inline-block;
           min-width: 100%;
