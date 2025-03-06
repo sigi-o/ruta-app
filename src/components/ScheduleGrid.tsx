@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { useDateSystem } from '@/context/DateContext';
@@ -229,6 +228,21 @@ const ScheduleGrid: React.FC = () => {
     };
   }, []);
 
+  const formatTo12Hour = (time24: string): string => {
+    const [hourStr, minuteStr] = time24.split(':');
+    const hour = parseInt(hourStr, 10);
+    const displayHour = hour % 12 || 12;
+    const amPm = hour < 12 ? 'AM' : 'PM';
+    return `${displayHour}:${minuteStr} ${amPm}`;
+  };
+
+  useEffect(() => {
+    console.log("Available time slots:", scheduleDay.timeSlots.length);
+    console.log("First time slot:", scheduleDay.timeSlots[0]?.time, "Label:", scheduleDay.timeSlots[0]?.label);
+    console.log("Last time slot:", scheduleDay.timeSlots[scheduleDay.timeSlots.length - 1]?.time, 
+                "Label:", scheduleDay.timeSlots[scheduleDay.timeSlots.length - 1]?.label);
+  }, [scheduleDay.timeSlots]);
+
   const availableDrivers = scheduleDay.drivers.filter(driver => driver.available !== false);
   const stopsByDriverAndTime = getStopsByDriverAndTime();
 
@@ -255,11 +269,6 @@ const ScheduleGrid: React.FC = () => {
       </div>
     );
   }
-
-  // Ensure we have access to the timeSlots from the context
-  console.log("Available time slots:", scheduleDay.timeSlots.length);
-  console.log("First time slot:", scheduleDay.timeSlots[0]?.time);
-  console.log("Last time slot:", scheduleDay.timeSlots[scheduleDay.timeSlots.length - 1]?.time);
 
   return (
     <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
@@ -338,7 +347,7 @@ const ScheduleGrid: React.FC = () => {
                             <div className="flex items-center text-xs gap-1">
                               <div className="text-gray-500">
                                 <Clock className="h-3 w-3 inline mr-1" />
-                                {stop.deliveryTime}
+                                {formatTo12Hour(stop.deliveryTime)}
                               </div>
                               <div 
                                 className="h-6 w-6 flex items-center justify-center text-gray-400 cursor-grab"

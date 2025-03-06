@@ -31,8 +31,10 @@ export function generateTimeSlots(startTime: string, endTime: string, intervalMi
     
     const timeString = `${formattedHour}:${formattedMinute}`;
     
-    // Format for display (24-hour format)
-    const displayTime = `${formattedHour}:${formattedMinute}`;
+    // Format for display (12-hour format with AM/PM)
+    const displayHour = currentHour % 12 || 12;
+    const amPm = currentHour < 12 ? 'AM' : 'PM';
+    const displayTime = `${displayHour}:${formattedMinute} ${amPm}`;
     
     timeSlots.push({
       time: timeString,
@@ -48,6 +50,7 @@ export function generateTimeSlots(startTime: string, endTime: string, intervalMi
   }
   
   console.log(`Generated ${timeSlots.length} time slots. First: ${timeSlots[0]?.time}, Last: ${timeSlots[timeSlots.length - 1]?.time}`);
+  console.log(`First label: ${timeSlots[0]?.label}, Last label: ${timeSlots[timeSlots.length - 1]?.label}`);
   
   return timeSlots;
 }
