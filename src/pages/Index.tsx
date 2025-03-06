@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { ScheduleProvider } from '@/context/ScheduleContext';
 import DriverPanel from '@/components/DriverPanel';
@@ -9,7 +8,7 @@ import PrintableSchedule from '@/components/PrintableSchedule';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format, parse } from 'date-fns';
+import { format } from 'date-fns';
 import { CalendarIcon, Download, Upload, Printer, Save } from 'lucide-react';
 import { useSchedule } from '@/context/ScheduleContext';
 
@@ -17,15 +16,27 @@ const ScheduleManager: React.FC = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isPrintView, setIsPrintView] = useState(false);
-  const { autoAssignStops, saveSchedule, isLoading, scheduleDay, setSelectedDate } = useSchedule();
+  const { autoAssignStops, saveSchedule, isLoading, scheduleDay, setSelectedDate, selectedDate } = useSchedule();
   const printTimeoutRef = useRef<number | null>(null);
+  
+  useEffect(() => {
+    if (selectedDate) {
+      try {
+        const parsedDate = new Date(selectedDate);
+        if (!isNaN(parsedDate.getTime())) {
+          setDate(parsedDate);
+          console.log(`Index synchronized with context date: ${selectedDate}`);
+        }
+      } catch (error) {
+        console.error("Error synchronizing with context date:", error);
+      }
+    }
+  }, []);
   
   const handlePrint = () => {
     console.log("Print triggered, refreshing print view with current data");
-    // Force a re-render of the print view
     setIsPrintView(false);
     
-    // Short timeout to ensure state is updated before setting to true
     setTimeout(() => {
       setIsPrintView(true);
       
@@ -51,10 +62,10 @@ const ScheduleManager: React.FC = () => {
   };
 
   const handleDateChange = (newDateString: string) => {
-    console.log(`Index received new date from child: ${newDateString}`);
+    console.log(`Index received new date from ScheduleGrid: ${newDateString}`);
     
     try {
-      const parsedDate = parse(newDateString, 'yyyy-MM-dd', new Date());
+      const parsedDate = new Date(newDateString);
       
       if (isNaN(parsedDate.getTime())) {
         console.error("Received invalid date string:", newDateString);
@@ -62,7 +73,8 @@ const ScheduleManager: React.FC = () => {
       }
       
       setDate(parsedDate);
-      console.log(`Updating context with date: ${newDateString}`);
+      
+      console.log(`Updating context with date from ScheduleGrid: ${newDateString}`);
       setSelectedDate(newDateString);
     } catch (error) {
       console.error("Error processing date change:", error);
@@ -72,8 +84,11 @@ const ScheduleManager: React.FC = () => {
   const handleCalendarSelect = (selectedDate: Date | undefined) => {
     if (selectedDate && !isNaN(selectedDate.getTime())) {
       setDate(selectedDate);
+      
       const dateString = format(selectedDate, 'yyyy-MM-dd');
+      
       console.log(`Calendar selected new date: ${dateString}`);
+      
       setSelectedDate(dateString);
     } else {
       console.error("Invalid date selected from calendar");
@@ -81,217 +96,14 @@ const ScheduleManager: React.FC = () => {
   };
 
   useEffect(() => {
-    console.log("Current date state:", format(date, 'yyyy-MM-dd'));
-  }, [date]);
-
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = `
-      .driver-cell {
-        min-height: 40px;
-        transition: background-color 0.2s;
-        padding: 4px;
-      }
-      
-      .driver-cell.drop-target {
-        background-color: rgba(59, 130, 246, 0.1) !important;
-        box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.5) !important;
-      }
-      
-      .unassigned-stop {
-        background-color: white;
-        border: 1px solid #e5e7eb;
-        border-left: 3px solid #3b82f6;
-        border-radius: 0.375rem;
-        padding: 0.75rem;
-        margin-bottom: 0.5rem;
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        transition: all 0.2s;
-      }
-      
-      .delivery-item {
-        border-radius: 0.375rem;
-        padding: 0.75rem;
-        margin-bottom: 0.5rem;
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        transition: all 0.2s;
-      }
-      
-      .schedule-container {
-        width: 100%;
-      }
-      
-      .time-header, .driver-header {
-        padding: 0.5rem;
-        background-color: #f9fafb;
-        border-bottom: 1px solid #e5e7eb;
-        font-weight: 500;
-      }
-      
-      .time-header {
-        min-width: 80px;
-        text-align: center;
-      }
-      
-      .driver-header {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      
-      .driver-avatar {
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: 500;
-      }
-      
-      .time-row {
-        display: flex;
-      }
-      
-      .time-label {
-        min-width: 80px;
-        padding: 0.5rem;
-        background-color: #f9fafb;
-        border-right: 1px solid #e5e7eb;
-        border-bottom: 1px solid #e5e7eb;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.875rem;
-      }
-      
-      .driver-cells {
-        display: flex;
-        flex: 1;
-      }
-      
-      .driver-cell {
-        flex: 1;
-        border-right: 1px solid #e5e7eb;
-        border-bottom: 1px solid #e5e7eb;
-      }
-      
-      .dragging {
-        opacity: 0.5;
-      }
-      
-      .hidden-stop {
-        display: none !important;
-      }
-      
-      /* Print-specific styles */
-      @media print {
-        body * {
-          visibility: hidden;
-        }
-        
-        .print-container, .print-container * {
-          visibility: visible;
-        }
-        
-        .print-container {
-          position: absolute;
-          left: 0;
-          top: 0;
-          width: 100%;
-        }
-        
-        .print-page {
-          page-break-after: always;
-          padding: 20px;
-        }
-        
-        .print-header {
-          margin-bottom: 20px;
-        }
-        
-        .print-header h1 {
-          margin: 0 0 5px 0;
-          font-size: 24px;
-        }
-        
-        .print-date {
-          font-size: 14px;
-          margin-bottom: 15px;
-        }
-        
-        .driver-name {
-          margin-bottom: 20px;
-        }
-        
-        .driver-name h2 {
-          margin: 0 0 5px 0;
-          font-size: 20px;
-        }
-        
-        .stops-list {
-          margin-top: 20px;
-        }
-        
-        .stop-item {
-          margin-bottom: 25px;
-          padding-bottom: 15px;
-          border-bottom: 1px solid #eee;
-        }
-        
-        .stop-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 10px;
-        }
-        
-        .stop-header h3 {
-          margin: 0;
-          font-size: 16px;
-        }
-        
-        .stop-time {
-          font-weight: bold;
-        }
-        
-        .stop-address {
-          margin-bottom: 10px;
-        }
-        
-        .stop-details ul {
-          padding-left: 20px;
-          margin: 5px 0;
-        }
-        
-        .items-list {
-          margin-top: 5px;
-        }
-        
-        .print-footer {
-          margin-top: 30px;
-          font-size: 12px;
-          color: #666;
-          display: flex;
-          justify-content: space-between;
-        }
-        
-        .no-stops {
-          padding: 20px;
-          text-align: center;
-          font-style: italic;
-          color: #666;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
+    const formattedDate = format(date, 'yyyy-MM-dd');
+    console.log("Current date state in Index:", formattedDate);
+    
+    if (formattedDate !== selectedDate) {
+      console.log(`Syncing context date (${selectedDate}) with local state (${formattedDate})`);
+      setSelectedDate(formattedDate);
+    }
+  }, [date, selectedDate, setSelectedDate]);
 
   if (isPrintView) {
     const currentDateString = getFormattedDateString();
@@ -327,12 +139,13 @@ const ScheduleManager: React.FC = () => {
                 {format(date, "PPP")}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="center">
+            <PopoverContent className="w-auto p-0 pointer-events-auto" align="center">
               <Calendar
                 mode="single"
                 selected={date}
                 onSelect={handleCalendarSelect}
                 initialFocus
+                className="p-3 pointer-events-auto"
               />
             </PopoverContent>
           </Popover>

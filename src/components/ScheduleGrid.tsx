@@ -18,6 +18,10 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
   const [expandedStopId, setExpandedStopId] = useState<string | null>(null);
   const { toast } = useToast();
 
+  useEffect(() => {
+    console.log("ScheduleGrid received new selectedDate prop:", selectedDate);
+  }, [selectedDate]);
+
   const handleDragStart = (e: React.DragEvent, stopId: string) => {
     console.log('Drag start in ScheduleGrid:', stopId);
     e.dataTransfer.setData('text/plain', JSON.stringify({
@@ -186,9 +190,49 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
     return result;
   };
 
-  useEffect(() => {
-    console.log("ScheduleGrid received date:", selectedDate);
-  }, [selectedDate]);
+  const goToPreviousDay = () => {
+    try {
+      console.log(`Current date before prev navigation: ${selectedDate}`);
+      const currentDate = new Date(selectedDate);
+      
+      if (isNaN(currentDate.getTime())) {
+        console.error("Cannot navigate: Invalid current date");
+        return;
+      }
+      
+      currentDate.setDate(currentDate.getDate() - 1);
+      
+      const previousDateString = format(currentDate, 'yyyy-MM-dd');
+      
+      console.log(`Navigation: Going from ${selectedDate} to previous day ${previousDateString}`);
+      
+      onDateChange(previousDateString);
+    } catch (error) {
+      console.error("Error navigating to previous day:", error);
+    }
+  };
+
+  const goToNextDay = () => {
+    try {
+      console.log(`Current date before next navigation: ${selectedDate}`);
+      const currentDate = new Date(selectedDate);
+      
+      if (isNaN(currentDate.getTime())) {
+        console.error("Cannot navigate: Invalid current date");
+        return;
+      }
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+      
+      const nextDateString = format(currentDate, 'yyyy-MM-dd');
+      
+      console.log(`Navigation: Going from ${selectedDate} to next day ${nextDateString}`);
+      
+      onDateChange(nextDateString);
+    } catch (error) {
+      console.error("Error navigating to next day:", error);
+    }
+  };
 
   useEffect(() => {
     const style = document.createElement('style');
@@ -236,48 +280,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
     formattedDate = "Invalid Date";
     console.error("Error formatting date:", error);
   }
-
-  const goToPreviousDay = () => {
-    try {
-      const currentDate = parse(selectedDate, 'yyyy-MM-dd', new Date());
-      
-      if (isNaN(currentDate.getTime())) {
-        console.error("Cannot navigate: Invalid current date");
-        return;
-      }
-      
-      const previousDate = addDays(currentDate, -1);
-      
-      const previousDateString = format(previousDate, 'yyyy-MM-dd');
-      
-      console.log(`Navigation: Going from ${selectedDate} to previous day ${previousDateString}`);
-      
-      onDateChange(previousDateString);
-    } catch (error) {
-      console.error("Error navigating to previous day:", error);
-    }
-  };
-
-  const goToNextDay = () => {
-    try {
-      const currentDate = parse(selectedDate, 'yyyy-MM-dd', new Date());
-      
-      if (isNaN(currentDate.getTime())) {
-        console.error("Cannot navigate: Invalid current date");
-        return;
-      }
-      
-      const nextDate = addDays(currentDate, 1);
-      
-      const nextDateString = format(nextDate, 'yyyy-MM-dd');
-      
-      console.log(`Navigation: Going from ${selectedDate} to next day ${nextDateString}`);
-      
-      onDateChange(nextDateString);
-    } catch (error) {
-      console.error("Error navigating to next day:", error);
-    }
-  };
 
   return (
     <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
