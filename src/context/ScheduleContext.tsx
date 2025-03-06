@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { Driver, DeliveryStop, TimeSlot, ScheduleDay } from '@/types';
 import { generateTimeSlots } from '@/lib/utils';
@@ -107,7 +106,6 @@ export const ScheduleContext = createContext<ScheduleContextType | undefined>(un
 const editStopEventChannel = new EventTarget();
 
 export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Get access to our centralized date system
   const { currentDateString } = useDateSystem();
   
   const [scheduleDay, setScheduleDay] = useState<ScheduleDay>(defaultScheduleDay);
@@ -240,11 +238,11 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         stop.id === stopId ? { ...stop, ...updatedStop } : stop
       );
       
-      if (isDateChanging && updatedStop.deliveryDate !== selectedDate) {
+      if (isDateChanging && updatedStop.deliveryDate !== currentDateString) {
         setTimeout(() => {
           toast({
             title: "Date Changed",
-            description: `Stop date changed to ${updatedStop.deliveryDate}, which differs from current view (${selectedDate}).`,
+            description: `Stop date changed to ${updatedStop.deliveryDate}, which differs from current view (${currentDateString}).`,
             variant: "destructive",
           });
         }, 0);
