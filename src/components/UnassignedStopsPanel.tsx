@@ -377,7 +377,7 @@ const UnassignedStopsPanel: React.FC = () => {
                   <SelectTrigger>
                     <SelectValue placeholder="Select time" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" className="pointer-events-auto max-h-[200px] overflow-y-auto">
                     {scheduleDay.timeSlots.map((slot) => (
                       <SelectItem key={slot.time} value={slot.time}>
                         {slot.label}
@@ -519,7 +519,7 @@ const UnassignedStopsPanel: React.FC = () => {
                     <SelectTrigger>
                       <SelectValue placeholder="Select time" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" className="pointer-events-auto max-h-[200px] overflow-y-auto">
                       {scheduleDay.timeSlots.map((slot) => (
                         <SelectItem key={slot.time} value={slot.time}>
                           {slot.label}
