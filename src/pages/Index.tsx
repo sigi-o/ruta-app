@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { ScheduleProvider } from '@/context/ScheduleContext';
 import { DateProvider, useDateSystem } from '@/context/DateContext';
@@ -11,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
-import { CalendarIcon, Download, Upload, Printer, Save } from 'lucide-react';
+import { CalendarIcon, Upload, Printer, FileCheck } from 'lucide-react';
 import { useSchedule } from '@/context/ScheduleContext';
 
 const ScheduleManager: React.FC = () => {
@@ -129,10 +128,11 @@ const ScheduleManager: React.FC = () => {
           </Button>
           
           <Button
-            className="bg-blue-600 text-white hover:bg-blue-700 font-semibold"
-            onClick={saveSchedule}
+            variant="ghost"
+            className="text-purple-600 hover:bg-purple-50 hover:text-purple-700"
+            onClick={() => saveSchedule()}
           >
-            <Save className="h-4 w-4 mr-2" /> Save
+            <FileCheck className="h-4 w-4 mr-2" /> Validate CSV
           </Button>
           
           <Button
