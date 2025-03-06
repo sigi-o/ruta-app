@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 const ScheduleCSS: React.FC = () => {
@@ -8,16 +9,12 @@ const ScheduleCSS: React.FC = () => {
         min-width: 100%;
         border-top: 1px solid #eaeaea;
         border-left: 1px solid #eaeaea;
-        position: relative;
       }
       
       .schedule-header {
         display: inline-flex;
         min-width: max-content;
         background-color: white;
-        position: sticky;
-        top: 0;
-        z-index: 20;
       }
       
       .time-header {
@@ -26,7 +23,7 @@ const ScheduleCSS: React.FC = () => {
         height: 56px;
         border-right: 1px solid #eaeaea;
         border-bottom: 1px solid #eaeaea;
-        z-index: 30;
+        z-index: 10;
       }
       
       .driver-header {
@@ -37,9 +34,6 @@ const ScheduleCSS: React.FC = () => {
         border-bottom: 1px solid #eaeaea;
         box-sizing: border-box;
         width: 200px;
-        position: sticky;
-        top: 0;
-        z-index: 20;
       }
       
       .schedule-body {
@@ -57,7 +51,7 @@ const ScheduleCSS: React.FC = () => {
         height: 100%;
         border-right: 1px solid #eaeaea;
         border-bottom: 1px solid #eaeaea;
-        z-index: 15;
+        z-index: 5;
       }
       
       .driver-cells {
