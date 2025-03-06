@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { ScheduleProvider } from '@/context/ScheduleContext';
 import DriverPanel from '@/components/DriverPanel';
@@ -20,6 +21,46 @@ const ScheduleManager: React.FC = () => {
   const printTimeoutRef = useRef<number | null>(null);
   const dateUpdateSourceRef = useRef<'calendar' | 'grid' | 'context' | null>(null);
   const isUpdatingDateRef = useRef<boolean>(false);
+  const gridDateRef = useRef<string | null>(null);
+  const calendarSyncTimeoutRef = useRef<number | null>(null);
+  
+  const validateDateSync = (dateStr: string) => {
+    const calendarDateStr = format(date, 'yyyy-MM-dd');
+    console.log(`Validating date sync: Calendar: ${calendarDateStr}, Grid: ${dateStr}`);
+    
+    if (calendarDateStr !== dateStr && !isUpdatingDateRef.current) {
+      console.log(`Date sync validation failed: Calendar: ${calendarDateStr}, Grid: ${dateStr}`);
+      
+      // Force sync to ensure consistency
+      if (calendarSyncTimeoutRef.current) {
+        clearTimeout(calendarSyncTimeoutRef.current);
+      }
+      
+      calendarSyncTimeoutRef.current = window.setTimeout(() => {
+        console.log(`Forcing date sync from grid to calendar: ${dateStr}`);
+        isUpdatingDateRef.current = true;
+        dateUpdateSourceRef.current = 'grid';
+        
+        try {
+          const parsedDate = new Date(dateStr);
+          if (!isNaN(parsedDate.getTime())) {
+            setDate(parsedDate);
+            setSelectedDate(dateStr);
+          }
+        } catch (error) {
+          console.error("Error during forced date sync:", error);
+        }
+        
+        calendarSyncTimeoutRef.current = window.setTimeout(() => {
+          isUpdatingDateRef.current = false;
+        }, 100);
+      }, 50);
+      
+      return false;
+    }
+    
+    return true;
+  };
   
   useEffect(() => {
     if (selectedDate && !isUpdatingDateRef.current) {
@@ -29,11 +70,18 @@ const ScheduleManager: React.FC = () => {
           console.log(`Index: Initial sync with context date: ${selectedDate}`);
           dateUpdateSourceRef.current = 'context';
           setDate(parsedDate);
+          gridDateRef.current = selectedDate;
         }
       } catch (error) {
         console.error("Error synchronizing with context date:", error);
       }
     }
+    
+    return () => {
+      if (calendarSyncTimeoutRef.current) {
+        clearTimeout(calendarSyncTimeoutRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -45,6 +93,7 @@ const ScheduleManager: React.FC = () => {
           isUpdatingDateRef.current = true;
           dateUpdateSourceRef.current = 'context';
           setDate(parsedDate);
+          gridDateRef.current = selectedDate;
           
           setTimeout(() => {
             isUpdatingDateRef.current = false;
@@ -95,6 +144,7 @@ const ScheduleManager: React.FC = () => {
     try {
       isUpdatingDateRef.current = true;
       dateUpdateSourceRef.current = 'grid';
+      gridDateRef.current = newDateString;
       
       const parsedDate = new Date(newDateString);
       if (isNaN(parsedDate.getTime())) {
@@ -133,6 +183,7 @@ const ScheduleManager: React.FC = () => {
       const dateString = format(selectedDate, 'yyyy-MM-dd');
       console.log(`Calendar selected new date: ${dateString}`);
       setSelectedDate(dateString);
+      gridDateRef.current = dateString;
       
       setTimeout(() => {
         isUpdatingDateRef.current = false;
@@ -150,6 +201,7 @@ const ScheduleManager: React.FC = () => {
       if (formattedDate !== selectedDate) {
         console.log(`Index: Syncing context date (${selectedDate}) with local state (${formattedDate})`);
         setSelectedDate(formattedDate);
+        gridDateRef.current = formattedDate;
       }
     }
   }, [date]);
@@ -234,6 +286,7 @@ const ScheduleManager: React.FC = () => {
           <ScheduleGrid 
             selectedDate={getFormattedDateString()} 
             onDateChange={handleDateChange}
+            validateDateSync={validateDateSync}
           />
         </div>
         

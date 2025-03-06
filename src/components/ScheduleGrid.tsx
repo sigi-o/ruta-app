@@ -3,25 +3,42 @@ import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
 import { Card } from '@/components/ui/card';
 import { MapPin, Clock, AlertCircle, Package, ShoppingBag, ChevronLeft, ChevronRight, GripHorizontal, Copy, Calendar } from 'lucide-react';
-import { format, parse } from 'date-fns';
+import { format, parse, addDays, subDays } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 
 interface ScheduleGridProps {
   selectedDate: string;
   onDateChange: (date: string) => void;
+  validateDateSync?: (date: string) => boolean;
 }
 
-const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange }) => {
+const ScheduleGrid: React.FC<ScheduleGridProps> = ({ 
+  selectedDate, 
+  onDateChange,
+  validateDateSync
+}) => {
   const { scheduleDay, assignStop, unassignStop, updateStop, removeStop, editStop, duplicateStop, getStopsForDate } = useSchedule();
   const [draggingStop, setDraggingStop] = useState<string | null>(null);
   const [expandedStopId, setExpandedStopId] = useState<string | null>(null);
   const { toast } = useToast();
   const [isNavigating, setIsNavigating] = useState(false);
+  const [displayDate, setDisplayDate] = useState<string>(selectedDate);
+  const [dateCheckFailed, setDateCheckFailed] = useState(false);
 
   useEffect(() => {
     console.log("ScheduleGrid received new selectedDate prop:", selectedDate);
-  }, [selectedDate]);
+    
+    // Perform date sync validation
+    if (validateDateSync && !validateDateSync(selectedDate)) {
+      console.warn("Date sync validation failed, waiting for correction");
+      setDateCheckFailed(true);
+      return;
+    }
+    
+    setDateCheckFailed(false);
+    setDisplayDate(selectedDate);
+  }, [selectedDate, validateDateSync]);
 
   const handleDragStart = (e: React.DragEvent, stopId: string) => {
     console.log('Drag start in ScheduleGrid:', stopId);
@@ -192,7 +209,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
   };
 
   const goToPreviousDay = () => {
-    if (isNavigating) return;
+    if (isNavigating || dateCheckFailed) return;
     
     try {
       setIsNavigating(true);
@@ -205,9 +222,8 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
         return;
       }
       
-      // Subtract one day
-      const previousDate = new Date(currentDate);
-      previousDate.setDate(previousDate.getDate() - 1);
+      // Calculate previous date using date-fns
+      const previousDate = subDays(currentDate, 1);
       
       const previousDateString = format(previousDate, 'yyyy-MM-dd');
       console.log(`ScheduleGrid: Navigation: Going to previous day ${previousDateString}`);
@@ -224,7 +240,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
   };
 
   const goToNextDay = () => {
-    if (isNavigating) return;
+    if (isNavigating || dateCheckFailed) return;
     
     try {
       setIsNavigating(true);
@@ -237,9 +253,8 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
         return;
       }
       
-      // Add one day
-      const nextDate = new Date(currentDate);
-      nextDate.setDate(nextDate.getDate() + 1);
+      // Calculate next date using date-fns
+      const nextDate = addDays(currentDate, 1);
       
       const nextDateString = format(nextDate, 'yyyy-MM-dd');
       console.log(`ScheduleGrid: Navigation: Going to next day ${nextDateString}`);
@@ -300,6 +315,17 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
   } catch (error) {
     formattedDate = "Invalid Date";
     console.error("Error formatting date:", error);
+  }
+
+  if (dateCheckFailed) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center bg-white rounded-lg overflow-hidden p-8">
+        <div className="text-center">
+          <h3 className="text-lg font-medium text-red-500 mb-2">Date Synchronization Error</h3>
+          <p className="text-gray-600 mb-4">The calendar and schedule grid dates are out of sync. Resolving...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
