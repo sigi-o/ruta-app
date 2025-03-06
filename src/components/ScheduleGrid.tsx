@@ -383,6 +383,89 @@ const ScheduleGrid: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        .schedule-container {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+        }
+        
+        .schedule-header {
+          display: flex;
+          background-color: #f9fafb;
+          border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .time-header {
+          width: 80px;
+          min-width: 80px;
+          padding: 8px;
+          font-weight: 500;
+          text-align: center;
+          border-right: 1px solid #e5e7eb;
+        }
+        
+        .driver-header {
+          flex: 1;
+          min-width: 140px;
+          padding: 8px;
+          font-weight: 500;
+          text-align: center;
+          border-right: 1px solid #e5e7eb;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .driver-avatar {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-weight: bold;
+        }
+        
+        .time-row {
+          display: flex;
+          border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .time-label {
+          width: 80px;
+          min-width: 80px;
+          padding: 8px;
+          text-align: center;
+          border-right: 1px solid #e5e7eb;
+          font-size: 0.85rem;
+          color: #6b7280;
+        }
+        
+        .driver-cells {
+          display: flex;
+          flex: 1;
+        }
+        
+        .driver-cell {
+          flex: 1;
+          min-width: 140px;
+          min-height: 60px;
+          border-right: 1px solid #e5e7eb;
+          padding: 4px;
+        }
+        
+        .delivery-item {
+          background-color: #f9fafb;
+          border-radius: 4px;
+          padding: 8px;
+          margin-bottom: 4px;
+          font-size: 0.9rem;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+      `}</style>
     </div>
   );
 };
