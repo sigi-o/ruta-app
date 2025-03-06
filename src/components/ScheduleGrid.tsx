@@ -1,150 +1,32 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { useDateSystem } from '@/context/DateContext';
-import { DeliveryStop, TimeSlot } from '@/types';
-import { Card } from '@/components/ui/card';
-import { MapPin, Clock, AlertCircle, Package, ShoppingBag, ChevronLeft, ChevronRight, GripHorizontal, Copy, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
+
+// Import the extracted components
+import DateNavigator from './schedule/DateNavigator';
+import ScheduleHeader from './schedule/ScheduleHeader';
+import TimeRow from './schedule/TimeRow';
+import ScheduleCSS from './schedule/ScheduleCSS';
+import { useDragDrop } from './schedule/useDragDrop';
 
 const ScheduleGrid: React.FC = () => {
-  const { scheduleDay, assignStop, unassignStop, updateStop, removeStop, editStop, duplicateStop, getStopsForDate } = useSchedule();
+  const { scheduleDay, editStop } = useSchedule();
   const { currentDate, currentDateString, goToNextDay, goToPreviousDay, isDateValid } = useDateSystem();
-  const [draggingStop, setDraggingStop] = useState<string | null>(null);
   const [expandedStopId, setExpandedStopId] = useState<string | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
   const { toast } = useToast();
 
-  const handleDragStart = (e: React.DragEvent, stopId: string) => {
-    console.log('Drag start in ScheduleGrid:', stopId);
-    e.dataTransfer.setData('text/plain', JSON.stringify({
-      stopId: stopId,
-      source: 'schedule'
-    }));
-    e.dataTransfer.effectAllowed = 'move';
-    setDraggingStop(stopId);
-
-    const stop = scheduleDay.stops.find(s => s.id === stopId);
-    if (stop) {
-      const dragImage = document.createElement('div');
-      dragImage.className = 'p-2 bg-blue-100 border border-blue-300 rounded shadow-sm';
-      dragImage.textContent = stop.businessName;
-      document.body.appendChild(dragImage);
-      
-      dragImage.style.position = 'absolute';
-      dragImage.style.top = '-1000px';
-      
-      e.dataTransfer.setDragImage(dragImage, 0, 0);
-      
-      setTimeout(() => {
-        document.body.removeChild(dragImage);
-      }, 100);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    
-    const target = e.currentTarget as HTMLElement;
-    target.classList.add('drop-target');
-  };
-  
-  const handleDragLeave = (e: React.DragEvent) => {
-    const target = e.currentTarget as HTMLElement;
-    target.classList.remove('drop-target');
-  };
-
-  const handleDrop = (e: React.DragEvent, driverId: string, timeSlot: string) => {
-    e.preventDefault();
-    console.log('Drop in ScheduleGrid:', driverId, timeSlot);
-    
-    const target = e.currentTarget as HTMLElement;
-    target.classList.remove('drop-target');
-    
-    let stopId = '';
-    let source = '';
-    
-    try {
-      const dataTransfer = JSON.parse(e.dataTransfer.getData('text/plain'));
-      stopId = dataTransfer.stopId;
-      source = dataTransfer.source;
-      console.log('Parsed data transfer:', dataTransfer);
-    } catch (error) {
-      console.error('Error parsing drag data:', error);
-      return;
-    }
-    
-    if (!stopId) return;
-    
-    const stop = scheduleDay.stops.find(s => s.id === stopId);
-    if (!stop) return;
-    
-    if (source === 'unassigned') {
-      if (stop.deliveryDate !== currentDateString) {
-        updateStop(stopId, {
-          deliveryDate: currentDateString,
-          deliveryTime: timeSlot,
-          status: 'assigned',
-          driverId
-        });
-        
-        toast({
-          title: "Date Updated",
-          description: `${stop.businessName} date changed from ${stop.deliveryDate} to ${currentDateString}`,
-        });
-      } else {
-        assignStop(stopId, driverId);
-        updateStop(stopId, { 
-          deliveryTime: timeSlot,
-          status: 'assigned'
-        });
-        
-        toast({
-          title: "Stop Assigned",
-          description: `${stop.businessName} assigned to ${scheduleDay.drivers.find(d => d.id === driverId)?.name}`,
-        });
-      }
-    } 
-    else if (source === 'schedule') {
-      if (stop.driverId !== driverId || stop.deliveryTime !== timeSlot) {
-        if (stop.driverId !== driverId) {
-          assignStop(stopId, driverId);
-        }
-        
-        if (stop.deliveryTime !== timeSlot) {
-          updateStop(stopId, { 
-            deliveryTime: timeSlot
-          });
-          
-          toast({
-            title: "Time Updated",
-            description: `${stop.businessName} moved to ${timeSlot}`,
-          });
-        } else {
-          toast({
-            title: "Stop Reassigned",
-            description: `${stop.businessName} reassigned to ${scheduleDay.drivers.find(d => d.id === driverId)?.name}`,
-          });
-        }
-      }
-    }
-    
-    setDraggingStop(null);
-  };
-
-  const getStopTypeIcon = (stopType: string) => {
-    switch (stopType) {
-      case 'delivery':
-        return <Package className="h-3 w-3" />;
-      case 'pickup':
-        return <ShoppingBag className="h-3 w-3" />;
-      case 'other':
-      default:
-        return <Package className="h-3 w-3" />;
-    }
-  };
+  const {
+    draggingStop,
+    setDraggingStop,
+    handleDragStart,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop
+  } = useDragDrop(currentDateString);
 
   const handleStopClick = (stopId: string) => {
     if (expandedStopId === stopId) {
@@ -156,7 +38,7 @@ const ScheduleGrid: React.FC = () => {
   };
 
   const getStopsByDriverAndTime = () => {
-    const result: Record<string, Record<string, DeliveryStop[]>> = {};
+    const result: Record<string, Record<string, any[]>> = {};
     
     const availableDrivers = scheduleDay.drivers.filter(driver => driver.available !== false);
 
@@ -228,14 +110,6 @@ const ScheduleGrid: React.FC = () => {
     };
   }, []);
 
-  const formatTo12Hour = (time24: string): string => {
-    const [hourStr, minuteStr] = time24.split(':');
-    const hour = parseInt(hourStr, 10);
-    const displayHour = hour % 12 || 12;
-    const amPm = hour < 12 ? 'AM' : 'PM';
-    return `${displayHour}:${minuteStr} ${amPm}`;
-  };
-
   useEffect(() => {
     console.log("Available time slots:", scheduleDay.timeSlots.length);
     console.log("First time slot:", scheduleDay.timeSlots[0]?.time, "Label:", scheduleDay.timeSlots[0]?.label);
@@ -274,221 +148,39 @@ const ScheduleGrid: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
-      <div className="card-header flex items-center justify-between p-4">
-        <button 
-          onClick={handlePrevButtonClick}
-          className="p-1 hover:bg-blue-50 rounded-full text-blue-600 pointer-events-auto"
-          aria-label="Previous day"
-          disabled={isNavigating}
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-        
-        <h2 className="text-lg font-medium">{formattedDate}</h2>
-        
-        <button 
-          onClick={handleNextButtonClick}
-          className="p-1 hover:bg-blue-50 rounded-full text-blue-600 pointer-events-auto"
-          aria-label="Next day"
-          disabled={isNavigating}
-        >
-          <ChevronRight className="h-5 w-5" />
-        </button>
-      </div>
+      <DateNavigator 
+        formattedDate={formattedDate}
+        onPrevButtonClick={handlePrevButtonClick}
+        onNextButtonClick={handleNextButtonClick}
+        isNavigating={isNavigating}
+      />
 
       <div className="flex-grow overflow-auto">
         <div className="schedule-container overflow-auto">
-          <div className="schedule-header sticky top-0 z-10 flex">
-            <div className="time-header">
-              Time
-            </div>
-            {availableDrivers.map(driver => (
-              <div 
-                key={driver.id}
-                className="driver-header"
-                style={{ borderLeft: `4px solid ${driver.color}` }}
-              >
-                <div className="driver-avatar mr-2" style={{ backgroundColor: driver.color }}>
-                  {driver.name.charAt(0)}
-                </div>
-                <span>{driver.name}</span>
-              </div>
-            ))}
-          </div>
+          <ScheduleHeader availableDrivers={availableDrivers} />
 
           <div className="schedule-body">
             {allTimeSlots.map(timeSlot => (
-              <div key={timeSlot.time} className="time-row">
-                <div className="time-label">
-                  {timeSlot.label}
-                </div>
-                
-                <div className="driver-cells">
-                  {availableDrivers.map(driver => (
-                    <div
-                      key={`${driver.id}-${timeSlot.time}`}
-                      className="driver-cell"
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onDrop={(e) => handleDrop(e, driver.id, timeSlot.time)}
-                    >
-                      {stopsByDriverAndTime[driver.id][timeSlot.time]?.map(stop => (
-                        <div
-                          key={stop.id}
-                          className={`delivery-item cursor-pointer ${draggingStop === stop.id ? 'opacity-50' : ''} ${
-                            stop.deliveryDate !== currentDateString ? 'border-2 border-yellow-500' : ''
-                          }`}
-                          style={{ backgroundColor: `${driver.color}15`, borderLeft: `3px solid ${driver.color}` }}
-                          draggable="true"
-                          onDragStart={(e) => handleDragStart(e, stop.id)}
-                          onDragEnd={() => setDraggingStop(null)}
-                          onClick={() => handleStopClick(stop.id)}
-                        >
-                          <div className="flex justify-between items-start">
-                            <div className="font-medium text-gray-800">{stop.businessName || stop.clientName}</div>
-                            <div className="flex items-center text-xs gap-1">
-                              <div className="text-gray-500">
-                                <Clock className="h-3 w-3 inline mr-1" />
-                                {formatTo12Hour(stop.deliveryTime)}
-                              </div>
-                              <div 
-                                className="h-6 w-6 flex items-center justify-center text-gray-400 cursor-grab"
-                                onMouseDown={(e) => e.stopPropagation()}
-                              >
-                                <GripHorizontal className="h-3 w-3" />
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center text-xs text-gray-500 mt-1">
-                            <MapPin className="h-3 w-3 mr-1" />
-                            {stop.address}
-                          </div>
-
-                          <div className="flex items-center text-xs text-gray-500 mt-1">
-                            <Calendar className="h-3 w-3 mr-1" />
-                            {stop.deliveryDate}
-                            {stop.deliveryDate !== currentDateString && (
-                              <span className="ml-1 text-yellow-600 font-medium">
-                                (Different date!)
-                              </span>
-                            )}
-                          </div>
-                          
-                          <div className="flex justify-between items-center mt-2">
-                            <div className="flex items-center">
-                              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-800">
-                                {getStopTypeIcon(stop.stopType)}
-                                <span className="ml-1 capitalize">{stop.stopType}</span>
-                              </span>
-                            </div>
-                            
-                            {stop.specialInstructions && (
-                              <div className="text-blue-500" title={stop.specialInstructions}>
-                                <AlertCircle className="h-3 w-3" />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <TimeRow
+                key={timeSlot.time}
+                timeSlot={timeSlot}
+                availableDrivers={availableDrivers}
+                stopsByDriverAndTime={stopsByDriverAndTime}
+                draggingStop={draggingStop}
+                currentDateString={currentDateString}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onDragStart={handleDragStart}
+                onDragEnd={() => setDraggingStop(null)}
+                onStopClick={handleStopClick}
+              />
             ))}
           </div>
         </div>
       </div>
 
-      <style>{`
-        .schedule-container {
-          display: inline-block;
-          min-width: 100%;
-          border-top: 1px solid #eaeaea;
-          border-left: 1px solid #eaeaea;
-        }
-        
-        .schedule-header {
-          display: inline-flex;
-          min-width: max-content;
-          background-color: white;
-        }
-        
-        .time-header {
-          @apply sticky left-0 bg-white text-xs font-medium text-gray-500 flex items-center justify-center;
-          min-width: 80px;
-          height: 56px;
-          border-right: 1px solid #eaeaea;
-          border-bottom: 1px solid #eaeaea;
-          z-index: 10;
-        }
-        
-        .driver-header {
-          @apply flex items-center justify-center px-3 py-2 font-medium bg-white;
-          min-width: 200px;
-          height: 56px;
-          border-right: 1px solid #eaeaea;
-          border-bottom: 1px solid #eaeaea;
-          box-sizing: border-box;
-          width: 200px;
-        }
-        
-        .schedule-body {
-          min-width: max-content;
-        }
-        
-        .time-row {
-          display: flex;
-          min-height: 100px;
-        }
-        
-        .time-label {
-          @apply sticky left-0 bg-white text-xs font-medium text-gray-500 flex items-center justify-center;
-          min-width: 80px;
-          height: 100%;
-          border-right: 1px solid #eaeaea;
-          border-bottom: 1px solid #eaeaea;
-          z-index: 5;
-        }
-        
-        .driver-cells {
-          display: flex;
-        }
-        
-        .driver-cell {
-          @apply p-2 bg-white hover:bg-blue-50/30 transition-colors;
-          min-width: 200px;
-          width: 200px;
-          box-sizing: border-box;
-          border-right: 1px solid #eaeaea;
-          border-bottom: 1px solid #eaeaea;
-        }
-        
-        .delivery-item {
-          @apply p-2 rounded-md shadow-sm text-sm mb-1 cursor-grab active:cursor-grabbing;
-          transition: transform 0.15s ease, box-shadow 0.15s ease;
-          z-index: 1;
-        }
-        
-        .delivery-item:hover {
-          transform: translateY(-2px);
-          @apply shadow-md;
-        }
-        
-        .delivery-item.dragging {
-          @apply shadow-lg z-10;
-          transform: scale(1.02);
-        }
-        
-        .unassigned-stop {
-          @apply bg-white p-3 rounded-md shadow-sm border border-gray-200 mb-2;
-          transition: all 0.2s ease;
-        }
-        
-        .unassigned-stop:hover {
-          @apply shadow-md border-blue-300;
-        }
-      `}</style>
+      <ScheduleCSS />
     </div>
   );
 };
