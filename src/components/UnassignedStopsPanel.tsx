@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSchedule, editStopEventChannel } from '@/context/ScheduleContext';
 import { useDateSystem } from '@/context/DateContext';
@@ -13,6 +12,7 @@ import { MapPin, Clock, Package, AlertCircle, Plus, Edit, Trash2, ShoppingBag, S
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { TimePicker } from '@/components/ui/time-picker';
 
 const UnassignedStopsPanel: React.FC = () => {
   const { scheduleDay, addStop, updateStop, removeStop, autoAssignStops, isLoading, editStop, duplicateStop } = useSchedule();
@@ -71,6 +71,14 @@ const UnassignedStopsPanel: React.FC = () => {
       setCurrentStop({ ...currentStop, [name]: value });
     } else {
       setNewStop({ ...newStop, [name]: value });
+    }
+  };
+
+  const handleTimeChange = (time: string) => {
+    if (isEditModalOpen && currentStop) {
+      setCurrentStop({ ...currentStop, deliveryTime: time });
+    } else {
+      setNewStop({ ...newStop, deliveryTime: time });
     }
   };
 
@@ -369,22 +377,11 @@ const UnassignedStopsPanel: React.FC = () => {
               
               <div className="space-y-2">
                 <Label htmlFor="deliveryTime">Delivery Time <span className="text-red-500">*</span></Label>
-                <Select
+                <TimePicker
                   value={newStop.deliveryTime}
-                  onValueChange={(value) => handleSelectChange('deliveryTime', value)}
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select time" />
-                  </SelectTrigger>
-                  <SelectContent position="popper" className="pointer-events-auto max-h-[200px] overflow-y-auto">
-                    {scheduleDay.timeSlots.map((slot) => (
-                      <SelectItem key={slot.time} value={slot.time}>
-                        {slot.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  onValueChange={(time) => handleTimeChange(time)}
+                  className="w-full"
+                />
               </div>
             </div>
             
@@ -445,7 +442,7 @@ const UnassignedStopsPanel: React.FC = () => {
           {currentStop && (
             <div className="space-y-4 py-2">
               <div className="space-y-2">
-                <Label htmlFor="businessName">Business Name <span className="text-red-500">*</span></Label>
+                <Label htmlFor="editBusinessName">Business Name <span className="text-red-500">*</span></Label>
                 <Input
                   id="editBusinessName"
                   name="businessName"
@@ -468,7 +465,7 @@ const UnassignedStopsPanel: React.FC = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="address">Address <span className="text-red-500">*</span></Label>
+                <Label htmlFor="editAddress">Address <span className="text-red-500">*</span></Label>
                 <Input
                   id="editAddress"
                   name="address"
@@ -480,7 +477,7 @@ const UnassignedStopsPanel: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="contactPhone">Phone Number (Optional)</Label>
+                <Label htmlFor="editContactPhone">Phone Number (Optional)</Label>
                 <Input
                   id="editContactPhone"
                   name="contactPhone"
@@ -511,22 +508,11 @@ const UnassignedStopsPanel: React.FC = () => {
                 
                 <div className="space-y-2">
                   <Label htmlFor="deliveryTime">Delivery Time <span className="text-red-500">*</span></Label>
-                  <Select
+                  <TimePicker
                     value={currentStop.deliveryTime}
-                    onValueChange={(value) => handleSelectChange('deliveryTime', value)}
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select time" />
-                    </SelectTrigger>
-                    <SelectContent position="popper" className="pointer-events-auto max-h-[200px] overflow-y-auto">
-                      {scheduleDay.timeSlots.map((slot) => (
-                        <SelectItem key={slot.time} value={slot.time}>
-                          {slot.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onValueChange={(time) => handleTimeChange(time)}
+                    className="w-full"
+                  />
                 </div>
               </div>
               
