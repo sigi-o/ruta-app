@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { Driver, DeliveryStop, TimeSlot, ScheduleDay } from '@/types';
 import { generateTimeSlots } from '@/lib/utils';
@@ -25,7 +26,7 @@ interface ScheduleContextType {
   getStopsForDate: (date: string) => DeliveryStop[];
 }
 
-const defaultTimeSlots = generateTimeSlots('07:00', '19:00', 30);
+const defaultTimeSlots = generateTimeSlots('00:00', '23:30', 30);
 const today = format(new Date(), 'yyyy-MM-dd');
 
 const defaultDrivers: Driver[] = [

@@ -34,11 +34,8 @@ export function TimePicker({
         const formattedMinute = minute.toString().padStart(2, "0")
         const timeValue = `${formattedHour}:${formattedMinute}`
         
-        // Format for display (12-hour format)
-        let displayHour = hour % 12
-        if (displayHour === 0) displayHour = 12
-        const period = hour >= 12 ? "PM" : "AM"
-        const displayValue = `${displayHour}:${formattedMinute.padStart(2, "0")} ${period}`
+        // Use 24-hour format for display
+        const displayValue = `${formattedHour}:${formattedMinute}`
         
         slots.push({
           value: timeValue,
@@ -49,14 +46,10 @@ export function TimePicker({
     return slots
   }, [intervalMinutes])
 
-  // Format time for display
+  // Format time for display in 24-hour format
   const formatDisplayTime = (timeString: string) => {
     const [hourStr, minuteStr] = timeString.split(":")
-    const hour = parseInt(hourStr, 10)
-    const minute = parseInt(minuteStr, 10)
-    const period = hour >= 12 ? "PM" : "AM"
-    const displayHour = hour % 12 === 0 ? 12 : hour % 12
-    return `${displayHour}:${minute.toString().padStart(2, "0")} ${period}`
+    return `${hourStr.padStart(2, "0")}:${minuteStr.padStart(2, "0")}`
   }
 
   // Handle time selection
