@@ -18,15 +18,17 @@ const ScheduleManager: React.FC = () => {
   const [isPrintView, setIsPrintView] = useState(false);
   const { autoAssignStops, saveSchedule, isLoading, scheduleDay, setSelectedDate, selectedDate } = useSchedule();
   const printTimeoutRef = useRef<number | null>(null);
-  const isDateChangingRef = useRef(false);
+  const dateUpdateSourceRef = useRef<'calendar' | 'grid' | 'context' | null>(null);
+  const isUpdatingDateRef = useRef<boolean>(false);
   
   useEffect(() => {
-    if (selectedDate) {
+    if (selectedDate && !isUpdatingDateRef.current) {
       try {
         const parsedDate = new Date(selectedDate);
         if (!isNaN(parsedDate.getTime())) {
+          console.log(`Index: Initial sync with context date: ${selectedDate}`);
+          dateUpdateSourceRef.current = 'context';
           setDate(parsedDate);
-          console.log(`Index synchronized with context date: ${selectedDate}`);
         }
       } catch (error) {
         console.error("Error synchronizing with context date:", error);
@@ -35,12 +37,18 @@ const ScheduleManager: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!isDateChangingRef.current && selectedDate) {
+    if (dateUpdateSourceRef.current !== 'context' && selectedDate && !isUpdatingDateRef.current) {
       try {
         const parsedDate = new Date(selectedDate);
         if (!isNaN(parsedDate.getTime()) && format(parsedDate, 'yyyy-MM-dd') !== format(date, 'yyyy-MM-dd')) {
           console.log(`Index: Syncing with context date change: ${selectedDate}`);
+          isUpdatingDateRef.current = true;
+          dateUpdateSourceRef.current = 'context';
           setDate(parsedDate);
+          
+          setTimeout(() => {
+            isUpdatingDateRef.current = false;
+          }, 50);
         }
       } catch (error) {
         console.error("Error synchronizing with context date:", error);
@@ -77,34 +85,49 @@ const ScheduleManager: React.FC = () => {
   };
 
   const handleDateChange = (newDateString: string) => {
-    console.log(`Index received new date from ScheduleGrid: ${newDateString}`);
+    console.log(`Index received new date from ScheduleGrid: ${newDateString}. Current source: ${dateUpdateSourceRef.current}`);
+    
+    if (isUpdatingDateRef.current) {
+      console.log("Skipping date update - already updating");
+      return;
+    }
     
     try {
-      isDateChangingRef.current = true;
-      const parsedDate = new Date(newDateString);
+      isUpdatingDateRef.current = true;
+      dateUpdateSourceRef.current = 'grid';
       
+      const parsedDate = new Date(newDateString);
       if (isNaN(parsedDate.getTime())) {
         console.error("Received invalid date string:", newDateString);
-        isDateChangingRef.current = false;
+        isUpdatingDateRef.current = false;
         return;
       }
       
       setDate(parsedDate);
+      
       console.log(`Updating context with date from ScheduleGrid: ${newDateString}`);
       setSelectedDate(newDateString);
       
       setTimeout(() => {
-        isDateChangingRef.current = false;
+        isUpdatingDateRef.current = false;
       }, 50);
     } catch (error) {
       console.error("Error processing date change:", error);
-      isDateChangingRef.current = false;
+      isUpdatingDateRef.current = false;
     }
   };
 
   const handleCalendarSelect = (selectedDate: Date | undefined) => {
+    if (isUpdatingDateRef.current) {
+      console.log("Skipping calendar update - already updating");
+      return;
+    }
+    
     if (selectedDate && !isNaN(selectedDate.getTime())) {
-      isDateChangingRef.current = true;
+      console.log(`Calendar selected new date`);
+      isUpdatingDateRef.current = true;
+      dateUpdateSourceRef.current = 'calendar';
+      
       setDate(selectedDate);
       
       const dateString = format(selectedDate, 'yyyy-MM-dd');
@@ -112,7 +135,7 @@ const ScheduleManager: React.FC = () => {
       setSelectedDate(dateString);
       
       setTimeout(() => {
-        isDateChangingRef.current = false;
+        isUpdatingDateRef.current = false;
       }, 50);
     } else {
       console.error("Invalid date selected from calendar");
@@ -120,16 +143,16 @@ const ScheduleManager: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!isDateChangingRef.current) {
+    if (!isUpdatingDateRef.current && dateUpdateSourceRef.current === 'calendar') {
       const formattedDate = format(date, 'yyyy-MM-dd');
-      console.log("Current date state in Index:", formattedDate);
+      console.log(`Index: Date changed locally to ${formattedDate}`);
       
       if (formattedDate !== selectedDate) {
         console.log(`Index: Syncing context date (${selectedDate}) with local state (${formattedDate})`);
         setSelectedDate(formattedDate);
       }
     }
-  }, [date, selectedDate, setSelectedDate]);
+  }, [date]);
 
   if (isPrintView) {
     const currentDateString = getFormattedDateString();

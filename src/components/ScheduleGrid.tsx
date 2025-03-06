@@ -3,7 +3,7 @@ import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
 import { Card } from '@/components/ui/card';
 import { MapPin, Clock, AlertCircle, Package, ShoppingBag, ChevronLeft, ChevronRight, GripHorizontal, Copy, Calendar } from 'lucide-react';
-import { addDays, format, parse } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 
@@ -17,6 +17,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
   const [draggingStop, setDraggingStop] = useState<string | null>(null);
   const [expandedStopId, setExpandedStopId] = useState<string | null>(null);
   const { toast } = useToast();
+  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
     console.log("ScheduleGrid received new selectedDate prop:", selectedDate);
@@ -191,48 +192,66 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
   };
 
   const goToPreviousDay = () => {
+    if (isNavigating) return;
+    
     try {
-      console.log(`ScheduleGrid: Current date before previous navigation: ${selectedDate}`);
-      const currentDate = new Date(selectedDate);
+      setIsNavigating(true);
+      console.log(`ScheduleGrid: Going to previous day from: ${selectedDate}`);
       
+      const currentDate = new Date(selectedDate);
       if (isNaN(currentDate.getTime())) {
         console.error("Cannot navigate: Invalid current date");
+        setIsNavigating(false);
         return;
       }
       
+      // Subtract one day
       const previousDate = new Date(currentDate);
       previousDate.setDate(previousDate.getDate() - 1);
       
       const previousDateString = format(previousDate, 'yyyy-MM-dd');
-      
-      console.log(`ScheduleGrid: Navigation: Going from ${selectedDate} to previous day ${previousDateString}`);
+      console.log(`ScheduleGrid: Navigation: Going to previous day ${previousDateString}`);
       
       onDateChange(previousDateString);
+      
+      setTimeout(() => {
+        setIsNavigating(false);
+      }, 300);
     } catch (error) {
       console.error("Error navigating to previous day:", error);
+      setIsNavigating(false);
     }
   };
 
   const goToNextDay = () => {
+    if (isNavigating) return;
+    
     try {
-      console.log(`ScheduleGrid: Current date before next navigation: ${selectedDate}`);
-      const currentDate = new Date(selectedDate);
+      setIsNavigating(true);
+      console.log(`ScheduleGrid: Going to next day from: ${selectedDate}`);
       
+      const currentDate = new Date(selectedDate);
       if (isNaN(currentDate.getTime())) {
         console.error("Cannot navigate: Invalid current date");
+        setIsNavigating(false);
         return;
       }
       
+      // Add one day
       const nextDate = new Date(currentDate);
       nextDate.setDate(nextDate.getDate() + 1);
       
       const nextDateString = format(nextDate, 'yyyy-MM-dd');
-      
-      console.log(`ScheduleGrid: Navigation: Going from ${selectedDate} to next day ${nextDateString}`);
+      console.log(`ScheduleGrid: Navigation: Going to next day ${nextDateString}`);
       
       onDateChange(nextDateString);
+      
+      setTimeout(() => {
+        setIsNavigating(false);
+      }, 300);
     } catch (error) {
       console.error("Error navigating to next day:", error);
+      setIsNavigating(false);
     }
   };
 
@@ -290,6 +309,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
           onClick={goToPreviousDay}
           className="p-1 hover:bg-blue-50 rounded-full text-blue-600"
           aria-label="Previous day"
+          disabled={isNavigating}
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
@@ -300,6 +320,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
           onClick={goToNextDay}
           className="p-1 hover:bg-blue-50 rounded-full text-blue-600"
           aria-label="Next day"
+          disabled={isNavigating}
         >
           <ChevronRight className="h-5 w-5" />
         </button>
