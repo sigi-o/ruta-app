@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -82,6 +83,17 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+  
+  /* Responsive font sizes */
+  html {
+    font-size: 14px;
+  }
+  
+  @media (min-width: 640px) {
+    html {
+      font-size: 16px;
+    }
   }
 }
 
@@ -179,6 +191,22 @@
   @apply shadow-md border-blue-300;
 }
 
+/* Responsive Adjustments */
+@media (max-width: 640px) {
+  .time-header, .time-label {
+    min-width: 60px;
+  }
+  
+  .driver-header, .driver-cell {
+    min-width: 180px;
+    width: 180px;
+  }
+  
+  .time-row {
+    min-height: 90px;
+  }
+}
+
 /* Scrollbar Styles */
 ::-webkit-scrollbar {
   width: 8px;
@@ -233,4 +261,22 @@
 
 .secondary-button {
   @apply inline-flex items-center justify-center gap-2 bg-white text-blue-600 border border-blue-200 px-4 py-2 rounded-md hover:bg-blue-50 transition-colors;
+}
+
+/* Responsive utilities */
+@media (max-width: 640px) {
+  .sm-stack {
+    @apply flex-col !important;
+  }
+  
+  .sm-stack > * {
+    @apply w-full !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    margin-bottom: 0.5rem !important;
+  }
+  
+  .sm-stack > *:last-child {
+    margin-bottom: 0 !important;
+  }
 }

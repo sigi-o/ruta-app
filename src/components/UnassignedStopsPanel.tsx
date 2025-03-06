@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSchedule, editStopEventChannel } from '@/context/ScheduleContext';
 import { useDateSystem } from '@/context/DateContext';
@@ -299,7 +300,7 @@ const UnassignedStopsPanel: React.FC = () => {
       </div>
 
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent>
+        <DialogContent className="overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-blue-600">Add New Stop</DialogTitle>
             <DialogDescription>
@@ -353,7 +354,7 @@ const UnassignedStopsPanel: React.FC = () => {
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="deliveryDate">Delivery Date <span className="text-red-500">*</span></Label>
                 <Input
@@ -414,17 +415,18 @@ const UnassignedStopsPanel: React.FC = () => {
                 value={newStop.specialInstructions || ''}
                 onChange={handleInputChange}
                 rows={3}
+                className="resize-none"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setIsAddModalOpen(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
             <Button 
               onClick={handleAddStop} 
               disabled={!newStop.businessName || !newStop.address || !newStop.deliveryTime || !newStop.stopType || !newStop.deliveryDate}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
             >
               Add Stop
             </Button>
@@ -433,7 +435,7 @@ const UnassignedStopsPanel: React.FC = () => {
       </Dialog>
 
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent>
+        <DialogContent className="overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-blue-600">Edit Stop</DialogTitle>
             <DialogDescription>
@@ -488,7 +490,7 @@ const UnassignedStopsPanel: React.FC = () => {
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="editDeliveryDate">Delivery Date <span className="text-red-500">*</span></Label>
                   <Input
@@ -555,16 +557,17 @@ const UnassignedStopsPanel: React.FC = () => {
                   value={currentStop.specialInstructions || ''}
                   onChange={handleInputChange}
                   rows={3}
+                  className="resize-none"
                 />
               </div>
             </div>
           )}
-          <DialogFooter className="flex justify-between">
-            <div className="flex space-x-2">
+          <DialogFooter className="flex flex-col sm:flex-row justify-between mt-4">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto mb-2 sm:mb-0">
               <Button 
                 variant="destructive"
                 onClick={() => handleDeleteStop(currentStop?.id || '')}
-                className="bg-red-600 hover:bg-red-700"
+                className="w-full sm:w-auto"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete
@@ -577,22 +580,24 @@ const UnassignedStopsPanel: React.FC = () => {
                     setIsEditModalOpen(false);
                   }
                 }}
+                className="w-full sm:w-auto"
               >
                 <Copy className="h-4 w-4 mr-2" />
                 Duplicate
               </Button>
             </div>
-            <div className="flex space-x-2">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Button 
                 variant="outline" 
                 onClick={() => setIsEditModalOpen(false)}
+                className="w-full sm:w-auto"
               >
                 Cancel
               </Button>
               <Button 
                 onClick={handleUpdateStop} 
                 disabled={!currentStop?.businessName || !currentStop?.address || !currentStop?.deliveryTime || !currentStop?.stopType || !currentStop?.deliveryDate}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
               >
                 Update Stop
               </Button>
