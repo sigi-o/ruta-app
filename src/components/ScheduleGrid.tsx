@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { DeliveryStop, TimeSlot } from '@/types';
@@ -25,19 +26,28 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
   const [isNavigating, setIsNavigating] = useState(false);
   const [displayDate, setDisplayDate] = useState<string>(selectedDate);
   const [dateCheckFailed, setDateCheckFailed] = useState(false);
+  const [showContent, setShowContent] = useState(true);
 
+  // Strict validation
   useEffect(() => {
     console.log("ScheduleGrid received new selectedDate prop:", selectedDate);
     
     // Perform date sync validation
-    if (validateDateSync && !validateDateSync(selectedDate)) {
-      console.warn("Date sync validation failed, waiting for correction");
-      setDateCheckFailed(true);
-      return;
+    if (validateDateSync) {
+      const isValid = validateDateSync(selectedDate);
+      console.log(`Date validation result: ${isValid ? 'valid' : 'invalid'}`);
+      
+      if (!isValid) {
+        console.warn("Date sync validation failed, hiding content");
+        setDateCheckFailed(true);
+        setShowContent(false);
+        return;
+      }
     }
     
     setDateCheckFailed(false);
     setDisplayDate(selectedDate);
+    setShowContent(true);
   }, [selectedDate, validateDateSync]);
 
   const handleDragStart = (e: React.DragEvent, stopId: string) => {
@@ -228,6 +238,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
       const previousDateString = format(previousDate, 'yyyy-MM-dd');
       console.log(`ScheduleGrid: Navigation: Going to previous day ${previousDateString}`);
       
+      // Call the onDateChange prop to update the parent component
       onDateChange(previousDateString);
       
       setTimeout(() => {
@@ -259,6 +270,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
       const nextDateString = format(nextDate, 'yyyy-MM-dd');
       console.log(`ScheduleGrid: Navigation: Going to next day ${nextDateString}`);
       
+      // Call the onDateChange prop to update the parent component
       onDateChange(nextDateString);
       
       setTimeout(() => {
@@ -323,6 +335,17 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
         <div className="text-center">
           <h3 className="text-lg font-medium text-red-500 mb-2">Date Synchronization Error</h3>
           <p className="text-gray-600 mb-4">The calendar and schedule grid dates are out of sync. Resolving...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!showContent) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center bg-white rounded-lg overflow-hidden p-8">
+        <div className="text-center">
+          <h3 className="text-lg font-medium text-red-500 mb-2">Date Synchronization Error</h3>
+          <p className="text-gray-600 mb-4">The calendar and schedule grid dates are out of sync. Waiting for synchronization...</p>
         </div>
       </div>
     );

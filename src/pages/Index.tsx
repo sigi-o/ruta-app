@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { ScheduleProvider } from '@/context/ScheduleContext';
 import DriverPanel from '@/components/DriverPanel';
@@ -23,13 +22,41 @@ const ScheduleManager: React.FC = () => {
   const isUpdatingDateRef = useRef<boolean>(false);
   const gridDateRef = useRef<string | null>(null);
   const calendarSyncTimeoutRef = useRef<number | null>(null);
+  const syncAttemptCountRef = useRef<number>(0);
+  const maxSyncAttempts = 3;
+  const [uiLocked, setUiLocked] = useState(false);
   
   const validateDateSync = (dateStr: string) => {
     const calendarDateStr = format(date, 'yyyy-MM-dd');
     console.log(`Validating date sync: Calendar: ${calendarDateStr}, Grid: ${dateStr}`);
     
-    if (calendarDateStr !== dateStr && !isUpdatingDateRef.current) {
+    if (calendarDateStr !== dateStr) {
       console.log(`Date sync validation failed: Calendar: ${calendarDateStr}, Grid: ${dateStr}`);
+      
+      syncAttemptCountRef.current += 1;
+      console.log(`Sync attempt: ${syncAttemptCountRef.current} of ${maxSyncAttempts}`);
+      
+      if (syncAttemptCountRef.current > maxSyncAttempts) {
+        console.error("Max sync attempts reached, UI will be locked");
+        setUiLocked(true);
+        // Force a hard reset by reloading both dates
+        setTimeout(() => {
+          const today = new Date();
+          const todayStr = format(today, 'yyyy-MM-dd');
+          console.log(`Forcing hard reset to today: ${todayStr}`);
+          isUpdatingDateRef.current = true;
+          setDate(today);
+          setSelectedDate(todayStr);
+          gridDateRef.current = todayStr;
+          
+          setTimeout(() => {
+            isUpdatingDateRef.current = false;
+            syncAttemptCountRef.current = 0;
+            setUiLocked(false);
+          }, 500);
+        }, 300);
+        return false;
+      }
       
       // Force sync to ensure consistency
       if (calendarSyncTimeoutRef.current) {
@@ -53,10 +80,16 @@ const ScheduleManager: React.FC = () => {
         
         calendarSyncTimeoutRef.current = window.setTimeout(() => {
           isUpdatingDateRef.current = false;
-        }, 100);
-      }, 50);
+        }, 200);
+      }, 100);
       
       return false;
+    }
+    
+    // Reset sync count on successful validation
+    if (syncAttemptCountRef.current > 0) {
+      console.log("Date sync restored, resetting attempt counter");
+      syncAttemptCountRef.current = 0;
     }
     
     return true;
@@ -141,6 +174,11 @@ const ScheduleManager: React.FC = () => {
       return;
     }
     
+    if (uiLocked) {
+      console.log("UI locked, ignoring date change request");
+      return;
+    }
+    
     try {
       isUpdatingDateRef.current = true;
       dateUpdateSourceRef.current = 'grid';
@@ -160,7 +198,7 @@ const ScheduleManager: React.FC = () => {
       
       setTimeout(() => {
         isUpdatingDateRef.current = false;
-      }, 50);
+      }, 200);
     } catch (error) {
       console.error("Error processing date change:", error);
       isUpdatingDateRef.current = false;
@@ -170,6 +208,11 @@ const ScheduleManager: React.FC = () => {
   const handleCalendarSelect = (selectedDate: Date | undefined) => {
     if (isUpdatingDateRef.current) {
       console.log("Skipping calendar update - already updating");
+      return;
+    }
+    
+    if (uiLocked) {
+      console.log("UI locked, ignoring calendar selection");
       return;
     }
     
@@ -187,7 +230,7 @@ const ScheduleManager: React.FC = () => {
       
       setTimeout(() => {
         isUpdatingDateRef.current = false;
-      }, 50);
+      }, 200);
     } else {
       console.error("Invalid date selected from calendar");
     }
@@ -205,6 +248,28 @@ const ScheduleManager: React.FC = () => {
       }
     }
   }, [date]);
+
+  if (uiLocked) {
+    return (
+      <div className="flex flex-col h-screen">
+        <header className="bg-white p-4 text-blue-600 flex items-center justify-between shadow-sm print:hidden">
+          <div>
+            <h1 className="text-2xl font-bold">Catering Flow Manager</h1>
+            <p className="text-blue-500/80">Streamlined delivery scheduling</p>
+          </div>
+        </header>
+        <div className="flex-grow flex items-center justify-center">
+          <div className="text-center p-8 max-w-md mx-auto">
+            <h2 className="text-xl font-bold text-red-600 mb-4">Date Synchronization Error</h2>
+            <p className="text-gray-600 mb-6">
+              A critical date synchronization error occurred. The application is resetting to today's date to recover.
+            </p>
+            <p className="text-gray-500 mb-2">Please wait...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isPrintView) {
     const currentDateString = getFormattedDateString();
