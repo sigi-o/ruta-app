@@ -52,47 +52,7 @@ const PrintableSchedule: React.FC<PrintableScheduleProps> = ({
 
   return (
     <div className="print-container p-4">
-      <style jsx global>{`
-        @media print {
-          @page {
-            size: portrait;
-            margin: 0.5cm;
-          }
-          
-          body {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          
-          .print-container {
-            width: 100%;
-            max-width: 100%;
-            padding: 0 !important;
-          }
-          
-          .driver-schedule {
-            page-break-after: always;
-            padding: 1cm 0.5cm;
-          }
-          
-          .driver-schedule:last-child {
-            page-break-after: avoid;
-          }
-          
-          .print-header {
-            margin-bottom: 1cm;
-          }
-          
-          .stop-item {
-            page-break-inside: avoid;
-            margin-bottom: 0.8cm;
-          }
-          
-          .print-footer {
-            margin-top: 1cm;
-          }
-        }
-      `}</style>
+      {/* Print styles are now handled in the index.css file */}
       
       {driversWithStops.map(({ driver, stops }) => (
         <div key={driver.id} className="driver-schedule print-page mb-8">
