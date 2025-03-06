@@ -263,6 +263,44 @@
   @apply inline-flex items-center justify-center gap-2 bg-white text-blue-600 border border-blue-200 px-4 py-2 rounded-md hover:bg-blue-50 transition-colors;
 }
 
+/* Printing Styles */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  .print-only, .print-only * {
+    visibility: visible !important;
+  }
+  
+  .print-only {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  
+  .print-container {
+    width: 100%;
+    max-width: 100%;
+    padding: 20px;
+  }
+  
+  .driver-schedule {
+    page-break-after: always;
+    padding: 20px 0;
+  }
+  
+  .driver-schedule:last-child {
+    page-break-after: avoid;
+  }
+  
+  .stop-item {
+    page-break-inside: avoid;
+    margin-bottom: 15px;
+  }
+}
+
 /* Responsive utilities */
 @media (max-width: 640px) {
   .sm-stack {
