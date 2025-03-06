@@ -1,3 +1,4 @@
+
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { TimeSlot } from "@/types";
@@ -15,9 +16,12 @@ export function generateTimeSlots(startTime: string, endTime: string, intervalMi
   const endHour = parseInt(endTime.split(':')[0]);
   const endMinute = parseInt(endTime.split(':')[1]);
   
+  console.log(`Generating time slots from ${startTime} to ${endTime} with ${intervalMinutes} minute intervals`);
+  
   let currentHour = startHour;
   let currentMinute = startMinute;
   
+  // Ensure we include the end time in the loop condition
   while (
     currentHour < endHour || 
     (currentHour === endHour && currentMinute <= endMinute)
@@ -42,6 +46,8 @@ export function generateTimeSlots(startTime: string, endTime: string, intervalMi
       currentMinute %= 60;
     }
   }
+  
+  console.log(`Generated ${timeSlots.length} time slots. First: ${timeSlots[0]?.time}, Last: ${timeSlots[timeSlots.length - 1]?.time}`);
   
   return timeSlots;
 }

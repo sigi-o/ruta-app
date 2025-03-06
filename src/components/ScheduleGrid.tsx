@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { useDateSystem } from '@/context/DateContext';
@@ -254,6 +255,11 @@ const ScheduleGrid: React.FC = () => {
       </div>
     );
   }
+
+  // Ensure we have access to the timeSlots from the context
+  console.log("Available time slots:", scheduleDay.timeSlots.length);
+  console.log("First time slot:", scheduleDay.timeSlots[0]?.time);
+  console.log("Last time slot:", scheduleDay.timeSlots[scheduleDay.timeSlots.length - 1]?.time);
 
   return (
     <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
