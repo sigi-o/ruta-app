@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSchedule, editStopEventChannel } from '@/context/ScheduleContext';
+import { useDateSystem } from '@/context/DateContext';
 import { DeliveryStop } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,11 +11,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { MapPin, Clock, Package, AlertCircle, Plus, Edit, Trash2, ShoppingBag, Shuffle, Phone, GripHorizontal, Copy, Calendar } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
-import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
 const UnassignedStopsPanel: React.FC = () => {
-  const { scheduleDay, addStop, updateStop, removeStop, autoAssignStops, isLoading, editStop, duplicateStop, selectedDate } = useSchedule();
+  const { scheduleDay, addStop, updateStop, removeStop, autoAssignStops, isLoading, editStop, duplicateStop } = useSchedule();
+  const { currentDateString } = useDateSystem();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentStop, setCurrentStop] = useState<DeliveryStop | null>(null);
@@ -23,13 +24,13 @@ const UnassignedStopsPanel: React.FC = () => {
     businessName: '',
     address: '',
     deliveryTime: '12:00',
-    deliveryDate: selectedDate,
+    deliveryDate: currentDateString,
     stopType: 'delivery',
   });
   const { toast } = useToast();
 
   const unassignedStops = scheduleDay.stops.filter(stop => 
-    stop.status === 'unassigned' && stop.deliveryDate === selectedDate
+    stop.status === 'unassigned' && stop.deliveryDate === currentDateString
   );
 
   useEffect(() => {
@@ -51,9 +52,9 @@ const UnassignedStopsPanel: React.FC = () => {
   useEffect(() => {
     setNewStop(prev => ({
       ...prev,
-      deliveryDate: selectedDate
+      deliveryDate: currentDateString
     }));
-  }, [selectedDate]);
+  }, [currentDateString]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -78,7 +79,7 @@ const UnassignedStopsPanel: React.FC = () => {
       businessName: '',
       address: '',
       deliveryTime: '12:00',
-      deliveryDate: selectedDate,
+      deliveryDate: currentDateString,
       stopType: 'delivery',
     });
     setIsAddModalOpen(false);
@@ -93,7 +94,7 @@ const UnassignedStopsPanel: React.FC = () => {
     if (currentStop) {
       updateStop(currentStop.id, currentStop);
       
-      if (currentStop.deliveryDate !== selectedDate) {
+      if (currentStop.deliveryDate !== currentDateString) {
         toast({
           title: "Date Changed",
           description: `This stop will be moved to ${currentStop.deliveryDate}, which is different from the current view.`,
@@ -191,7 +192,7 @@ const UnassignedStopsPanel: React.FC = () => {
                 className={`unassigned-stop cursor-grab ${draggingStop === stop.id ? 'opacity-50' : ''}`}
                 draggable="true"
                 onDragStart={(e) => handleDragStart(e, stop)}
-                onDragEnd={handleDragEnd}
+                onDragEnd={() => setDraggingStop(null)}
                 onClick={() => handleEditStop(stop)}
               >
                 <div className="flex justify-between items-start">
@@ -498,10 +499,10 @@ const UnassignedStopsPanel: React.FC = () => {
                     onChange={handleInputChange}
                     required
                   />
-                  {currentStop.deliveryDate !== selectedDate && (
+                  {currentStop.deliveryDate !== currentDateString && (
                     <p className="text-xs text-yellow-600 mt-1">
                       <AlertCircle className="h-3 w-3 inline mr-1" />
-                      This date differs from the current view date ({selectedDate})
+                      This date differs from the current view date ({currentDateString})
                     </p>
                   )}
                 </div>

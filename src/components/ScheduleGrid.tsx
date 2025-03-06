@@ -1,54 +1,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
+import { useDateSystem } from '@/context/DateContext';
 import { DeliveryStop, TimeSlot } from '@/types';
 import { Card } from '@/components/ui/card';
 import { MapPin, Clock, AlertCircle, Package, ShoppingBag, ChevronLeft, ChevronRight, GripHorizontal, Copy, Calendar } from 'lucide-react';
-import { format, parse, addDays, subDays } from 'date-fns';
+import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 
-interface ScheduleGridProps {
-  selectedDate: string;
-  onDateChange: (date: string) => void;
-  validateDateSync?: (date: string) => boolean;
-}
-
-const ScheduleGrid: React.FC<ScheduleGridProps> = ({ 
-  selectedDate, 
-  onDateChange,
-  validateDateSync
-}) => {
+const ScheduleGrid: React.FC = () => {
   const { scheduleDay, assignStop, unassignStop, updateStop, removeStop, editStop, duplicateStop, getStopsForDate } = useSchedule();
+  const { currentDate, currentDateString, goToNextDay, goToPreviousDay, isDateValid } = useDateSystem();
   const [draggingStop, setDraggingStop] = useState<string | null>(null);
   const [expandedStopId, setExpandedStopId] = useState<string | null>(null);
-  const { toast } = useToast();
   const [isNavigating, setIsNavigating] = useState(false);
-  const [displayDate, setDisplayDate] = useState<string>(selectedDate);
-  const [dateCheckFailed, setDateCheckFailed] = useState(false);
-  const [showContent, setShowContent] = useState(true);
-
-  // Strict validation
-  useEffect(() => {
-    console.log("ScheduleGrid received new selectedDate prop:", selectedDate);
-    
-    // Perform date sync validation
-    if (validateDateSync) {
-      const isValid = validateDateSync(selectedDate);
-      console.log(`Date validation result: ${isValid ? 'valid' : 'invalid'}`);
-      
-      if (!isValid) {
-        console.warn("Date sync validation failed, hiding content");
-        setDateCheckFailed(true);
-        setShowContent(false);
-        return;
-      }
-    }
-    
-    setDateCheckFailed(false);
-    setDisplayDate(selectedDate);
-    setShowContent(true);
-  }, [selectedDate, validateDateSync]);
+  const { toast } = useToast();
 
   const handleDragStart = (e: React.DragEvent, stopId: string) => {
     console.log('Drag start in ScheduleGrid:', stopId);
@@ -116,9 +83,9 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
     if (!stop) return;
     
     if (source === 'unassigned') {
-      if (stop.deliveryDate !== selectedDate) {
+      if (stop.deliveryDate !== currentDateString) {
         updateStop(stopId, {
-          deliveryDate: selectedDate,
+          deliveryDate: currentDateString,
           deliveryTime: timeSlot,
           status: 'assigned',
           driverId
@@ -126,7 +93,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
         
         toast({
           title: "Date Updated",
-          description: `${stop.businessName} date changed from ${stop.deliveryDate} to ${selectedDate}`,
+          description: `${stop.businessName} date changed from ${stop.deliveryDate} to ${currentDateString}`,
         });
       } else {
         assignStop(stopId, driverId);
@@ -201,7 +168,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
       });
     });
     
-    const stopsForCurrentDate = scheduleDay.stops.filter(stop => stop.deliveryDate === selectedDate);
+    const stopsForCurrentDate = scheduleDay.stops.filter(stop => stop.deliveryDate === currentDateString);
     
     stopsForCurrentDate.forEach(stop => {
       if (stop.status === 'assigned' && stop.driverId) {
@@ -218,68 +185,18 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
     return result;
   };
 
-  const goToPreviousDay = () => {
-    if (isNavigating || dateCheckFailed) return;
-    
-    try {
-      setIsNavigating(true);
-      console.log(`ScheduleGrid: Going to previous day from: ${selectedDate}`);
-      
-      const currentDate = new Date(selectedDate);
-      if (isNaN(currentDate.getTime())) {
-        console.error("Cannot navigate: Invalid current date");
-        setIsNavigating(false);
-        return;
-      }
-      
-      // Calculate previous date using date-fns
-      const previousDate = subDays(currentDate, 1);
-      
-      const previousDateString = format(previousDate, 'yyyy-MM-dd');
-      console.log(`ScheduleGrid: Navigation: Going to previous day ${previousDateString}`);
-      
-      // Call the onDateChange prop to update the parent component
-      onDateChange(previousDateString);
-      
-      setTimeout(() => {
-        setIsNavigating(false);
-      }, 300);
-    } catch (error) {
-      console.error("Error navigating to previous day:", error);
-      setIsNavigating(false);
-    }
+  const handlePrevButtonClick = () => {
+    if (isNavigating) return;
+    setIsNavigating(true);
+    goToPreviousDay();
+    setTimeout(() => setIsNavigating(false), 300);
   };
 
-  const goToNextDay = () => {
-    if (isNavigating || dateCheckFailed) return;
-    
-    try {
-      setIsNavigating(true);
-      console.log(`ScheduleGrid: Going to next day from: ${selectedDate}`);
-      
-      const currentDate = new Date(selectedDate);
-      if (isNaN(currentDate.getTime())) {
-        console.error("Cannot navigate: Invalid current date");
-        setIsNavigating(false);
-        return;
-      }
-      
-      // Calculate next date using date-fns
-      const nextDate = addDays(currentDate, 1);
-      
-      const nextDateString = format(nextDate, 'yyyy-MM-dd');
-      console.log(`ScheduleGrid: Navigation: Going to next day ${nextDateString}`);
-      
-      // Call the onDateChange prop to update the parent component
-      onDateChange(nextDateString);
-      
-      setTimeout(() => {
-        setIsNavigating(false);
-      }, 300);
-    } catch (error) {
-      console.error("Error navigating to next day:", error);
-      setIsNavigating(false);
-    }
+  const handleNextButtonClick = () => {
+    if (isNavigating) return;
+    setIsNavigating(true);
+    goToNextDay();
+    setTimeout(() => setIsNavigating(false), 300);
   };
 
   useEffect(() => {
@@ -317,19 +234,18 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
 
   let formattedDate = "";
   try {
-    const parsedDate = new Date(selectedDate);
-    if (!isNaN(parsedDate.getTime())) {
-      formattedDate = format(parsedDate, 'EEEE, MMMM d, yyyy');
+    if (isDateValid) {
+      formattedDate = format(currentDate, 'EEEE, MMMM d, yyyy');
     } else {
       formattedDate = "Invalid Date";
-      console.error("Invalid date format:", selectedDate);
+      console.error("Invalid date format in ScheduleGrid");
     }
   } catch (error) {
     formattedDate = "Invalid Date";
     console.error("Error formatting date:", error);
   }
 
-  if (dateCheckFailed) {
+  if (!isDateValid) {
     return (
       <div className="h-full flex flex-col items-center justify-center bg-white rounded-lg overflow-hidden p-8">
         <div className="text-center">
@@ -340,23 +256,12 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
     );
   }
 
-  if (!showContent) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center bg-white rounded-lg overflow-hidden p-8">
-        <div className="text-center">
-          <h3 className="text-lg font-medium text-red-500 mb-2">Date Synchronization Error</h3>
-          <p className="text-gray-600 mb-4">The calendar and schedule grid dates are out of sync. Waiting for synchronization...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
       <div className="card-header flex items-center justify-between p-4">
         <button 
-          onClick={goToPreviousDay}
-          className="p-1 hover:bg-blue-50 rounded-full text-blue-600"
+          onClick={handlePrevButtonClick}
+          className="p-1 hover:bg-blue-50 rounded-full text-blue-600 pointer-events-auto"
           aria-label="Previous day"
           disabled={isNavigating}
         >
@@ -366,8 +271,8 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
         <h2 className="text-lg font-medium">{formattedDate}</h2>
         
         <button 
-          onClick={goToNextDay}
-          className="p-1 hover:bg-blue-50 rounded-full text-blue-600"
+          onClick={handleNextButtonClick}
+          className="p-1 hover:bg-blue-50 rounded-full text-blue-600 pointer-events-auto"
           aria-label="Next day"
           disabled={isNavigating}
         >
@@ -415,7 +320,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                         <div
                           key={stop.id}
                           className={`delivery-item cursor-pointer ${draggingStop === stop.id ? 'opacity-50' : ''} ${
-                            stop.deliveryDate !== selectedDate ? 'border-2 border-yellow-500' : ''
+                            stop.deliveryDate !== currentDateString ? 'border-2 border-yellow-500' : ''
                           }`}
                           style={{ backgroundColor: `${driver.color}15`, borderLeft: `3px solid ${driver.color}` }}
                           draggable="true"
@@ -447,7 +352,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                           <div className="flex items-center text-xs text-gray-500 mt-1">
                             <Calendar className="h-3 w-3 mr-1" />
                             {stop.deliveryDate}
-                            {stop.deliveryDate !== selectedDate && (
+                            {stop.deliveryDate !== currentDateString && (
                               <span className="ml-1 text-yellow-600 font-medium">
                                 (Different date!)
                               </span>

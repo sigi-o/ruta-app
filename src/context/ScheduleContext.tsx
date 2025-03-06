@@ -1,8 +1,10 @@
+
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { Driver, DeliveryStop, TimeSlot, ScheduleDay } from '@/types';
 import { generateTimeSlots } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { useDateSystem } from './DateContext';
 
 interface ScheduleContextType {
   scheduleDay: ScheduleDay;
@@ -21,8 +23,6 @@ interface ScheduleContextType {
   isLoading: boolean;
   editStop: (stopId: string) => void;
   duplicateStop: (stopId: string) => void;
-  setSelectedDate: (date: string) => void;
-  selectedDate: string;
   getStopsForDate: (date: string) => DeliveryStop[];
 }
 
@@ -107,9 +107,11 @@ export const ScheduleContext = createContext<ScheduleContextType | undefined>(un
 const editStopEventChannel = new EventTarget();
 
 export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Get access to our centralized date system
+  const { currentDateString } = useDateSystem();
+  
   const [scheduleDay, setScheduleDay] = useState<ScheduleDay>(defaultScheduleDay);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<string>(today);
   const { toast } = useToast();
   const initialLoadComplete = useRef(false);
 
@@ -212,7 +214,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ...stop,
       id: `stop-${Date.now()}`,
       status: 'unassigned',
-      deliveryDate: stop.deliveryDate || selectedDate,
+      deliveryDate: stop.deliveryDate || currentDateString,
     };
 
     setScheduleDay(prev => ({
@@ -220,10 +222,10 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       stops: [...prev.stops, newStop],
     }));
 
-    if (newStop.deliveryDate !== selectedDate) {
+    if (newStop.deliveryDate !== currentDateString) {
       toast({
         title: "Different Delivery Date",
-        description: `This stop is scheduled for ${newStop.deliveryDate}, not the currently selected date (${selectedDate}).`,
+        description: `This stop is scheduled for ${newStop.deliveryDate}, not the currently selected date (${currentDateString}).`,
         variant: "destructive",
       });
     }
@@ -411,7 +413,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         clientName: row.clientName || row.customer_name || row.client || '',
         address: row.address || row.delivery_address || row.location || '',
         deliveryTime: row.deliveryTime || row.delivery_time || row.time || '12:00',
-        deliveryDate: row.deliveryDate || row.delivery_date || row.date || selectedDate,
+        deliveryDate: row.deliveryDate || row.delivery_date || row.date || currentDateString,
         status: 'unassigned' as const,
         orderNumber: row.orderNumber || row.order_number || row.order_id || `ORD-${index + 100}`,
         contactPhone: row.contactPhone || row.phone || row.contact || '',
@@ -486,8 +488,6 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       isLoading,
       editStop,
       duplicateStop,
-      selectedDate,
-      setSelectedDate,
       getStopsForDate
     }}>
       {children}
