@@ -111,10 +111,20 @@ const ScheduleGrid: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    console.log("Available time slots:", scheduleDay.timeSlots.length);
+    // Debugging logs to verify time slots
+    console.log("Available time slots total:", scheduleDay.timeSlots.length);
     console.log("First time slot:", scheduleDay.timeSlots[0]?.time, "Label:", scheduleDay.timeSlots[0]?.label);
     console.log("Last time slot:", scheduleDay.timeSlots[scheduleDay.timeSlots.length - 1]?.time, 
                 "Label:", scheduleDay.timeSlots[scheduleDay.timeSlots.length - 1]?.label);
+    
+    // Log a few time slots to verify the full range
+    console.log("Sample time slots:");
+    const sampleIndices = [0, 8, 16, 24, 32, 40, 47]; // Sample indices across the range
+    sampleIndices.forEach(index => {
+      if (scheduleDay.timeSlots[index]) {
+        console.log(`Slot ${index}: ${scheduleDay.timeSlots[index].time} - ${scheduleDay.timeSlots[index].label}`);
+      }
+    });
   }, [scheduleDay.timeSlots]);
 
   const availableDrivers = scheduleDay.drivers.filter(driver => driver.available !== false);
@@ -144,8 +154,9 @@ const ScheduleGrid: React.FC = () => {
     );
   }
 
+  // Make sure we're using ALL time slots from the context
   const allTimeSlots = scheduleDay.timeSlots;
-
+  
   return (
     <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
       <DateNavigator 
@@ -160,9 +171,9 @@ const ScheduleGrid: React.FC = () => {
           <ScheduleHeader availableDrivers={availableDrivers} />
 
           <div className="schedule-body">
-            {allTimeSlots.map(timeSlot => (
+            {allTimeSlots.map((timeSlot, index) => (
               <TimeRow
-                key={timeSlot.time}
+                key={`${timeSlot.time}-${index}`}
                 timeSlot={timeSlot}
                 availableDrivers={availableDrivers}
                 stopsByDriverAndTime={stopsByDriverAndTime}
