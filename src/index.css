@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -283,12 +282,12 @@
   .print-container {
     width: 100%;
     max-width: 100%;
-    padding: 20px;
+    padding: 10px;
   }
   
   .driver-schedule {
     page-break-after: always;
-    padding: 20px 0;
+    padding: 10px 0;
   }
   
   .driver-schedule:last-child {
@@ -297,7 +296,36 @@
   
   .stop-item {
     page-break-inside: avoid;
-    margin-bottom: 15px;
+    margin-bottom: 8px;
+  }
+  
+  @page {
+    size: portrait;
+    margin: 0.5cm;
+  }
+  
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  .stops-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  
+  .stop-item {
+    font-size: 10px;
+  }
+  
+  .print-header {
+    margin-bottom: 10px;
+  }
+  
+  .print-footer {
+    margin-top: 10px;
+    font-size: 8px;
   }
 }
 
