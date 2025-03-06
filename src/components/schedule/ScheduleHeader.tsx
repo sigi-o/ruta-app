@@ -10,7 +10,7 @@ interface ScheduleHeaderProps {
 
 const ScheduleHeader: React.FC<ScheduleHeaderProps> = ({ availableDrivers }) => {
   return (
-    <div className="schedule-header sticky top-0 z-20">
+    <div className="schedule-header">
       <TimeHeader />
       {availableDrivers.map(driver => (
         <DriverHeader key={driver.id} driver={driver} />

@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 const ScheduleCSS: React.FC = () => {
@@ -37,8 +38,6 @@ const ScheduleCSS: React.FC = () => {
         border-bottom: 1px solid #eaeaea;
         box-sizing: border-box;
         width: 200px;
-        position: sticky;
-        top: 0;
         z-index: 20;
       }
       
