@@ -192,7 +192,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
 
   const goToPreviousDay = () => {
     try {
-      console.log(`Current date before prev navigation: ${selectedDate}`);
+      console.log(`ScheduleGrid: Current date before previous navigation: ${selectedDate}`);
       const currentDate = new Date(selectedDate);
       
       if (isNaN(currentDate.getTime())) {
@@ -200,11 +200,12 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
         return;
       }
       
-      currentDate.setDate(currentDate.getDate() - 1);
+      const previousDate = new Date(currentDate);
+      previousDate.setDate(previousDate.getDate() - 1);
       
-      const previousDateString = format(currentDate, 'yyyy-MM-dd');
+      const previousDateString = format(previousDate, 'yyyy-MM-dd');
       
-      console.log(`Navigation: Going from ${selectedDate} to previous day ${previousDateString}`);
+      console.log(`ScheduleGrid: Navigation: Going from ${selectedDate} to previous day ${previousDateString}`);
       
       onDateChange(previousDateString);
     } catch (error) {
@@ -214,7 +215,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
 
   const goToNextDay = () => {
     try {
-      console.log(`Current date before next navigation: ${selectedDate}`);
+      console.log(`ScheduleGrid: Current date before next navigation: ${selectedDate}`);
       const currentDate = new Date(selectedDate);
       
       if (isNaN(currentDate.getTime())) {
@@ -222,11 +223,12 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ selectedDate, onDateChange 
         return;
       }
       
-      currentDate.setDate(currentDate.getDate() + 1);
+      const nextDate = new Date(currentDate);
+      nextDate.setDate(nextDate.getDate() + 1);
       
-      const nextDateString = format(currentDate, 'yyyy-MM-dd');
+      const nextDateString = format(nextDate, 'yyyy-MM-dd');
       
-      console.log(`Navigation: Going from ${selectedDate} to next day ${nextDateString}`);
+      console.log(`ScheduleGrid: Navigation: Going from ${selectedDate} to next day ${nextDateString}`);
       
       onDateChange(nextDateString);
     } catch (error) {
