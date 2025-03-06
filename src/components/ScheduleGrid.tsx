@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { useDateSystem } from '@/context/DateContext';
