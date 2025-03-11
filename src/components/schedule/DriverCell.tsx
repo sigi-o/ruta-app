@@ -32,7 +32,9 @@ const DriverCell: React.FC<DriverCellProps> = ({
 }) => {
   return (
     <div
-      className="driver-cell"
+      className="driver-cell min-w-[150px] border-r border-b border-gray-200 h-full"
+      data-driver-id={driver.id}
+      data-time-slot={timeSlot}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={(e) => onDrop(e, driver.id, timeSlot)}

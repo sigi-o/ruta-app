@@ -43,15 +43,17 @@ const ScheduleCSS: React.FC = () => {
       
       .schedule-body {
         min-width: max-content;
+        display: flex;
+        flex-direction: column;
       }
       
       .time-row {
         display: flex;
         min-height: 100px;
+        width: 100%;
       }
       
       .time-label {
-        @apply sticky left-0 bg-white text-xs font-medium text-gray-500 flex items-center justify-center;
         min-width: 80px;
         height: 100%;
         border-right: 1px solid #eaeaea;
@@ -61,6 +63,7 @@ const ScheduleCSS: React.FC = () => {
       
       .driver-cells {
         display: flex;
+        flex: 1;
       }
       
       .driver-cell {
