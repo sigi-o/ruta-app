@@ -39,7 +39,7 @@ const DriverCell: React.FC<DriverCellProps> = ({
       onDragLeave={onDragLeave}
       onDrop={(e) => onDrop(e, driver.id, timeSlot)}
     >
-      <div className="h-full overflow-y-auto">
+      <div className="h-full">
         {stops.map(stop => (
           <StopItem 
             key={stop.id}

@@ -32,11 +32,11 @@ const TimeRow: React.FC<TimeRowProps> = ({
 }) => {
   return (
     <div className="time-row" data-time={timeSlot.time}>
-      <div className="time-label sticky left-0 bg-white z-10 min-w-[80px] w-[80px] flex items-center justify-center text-xs font-medium text-gray-500 border-r border-b border-gray-200">
+      <div className="time-label sticky left-0 bg-white z-10 min-w-[80px] w-[80px] flex items-center justify-center text-xs font-medium text-gray-500 border-r border-gray-200">
         {timeSlot.label}
       </div>
       
-      <div className="driver-cells flex flex-1 h-full">
+      <div className="driver-cells flex flex-1">
         {availableDrivers.map(driver => (
           <DriverCell
             key={`${driver.id}-${timeSlot.time}`}

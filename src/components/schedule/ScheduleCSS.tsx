@@ -55,7 +55,6 @@ const ScheduleCSS: React.FC = () => {
       
       .time-label {
         min-width: 80px;
-        height: 100%;
         border-right: 1px solid #eaeaea;
         border-bottom: 1px solid #eaeaea;
         z-index: 15;
@@ -70,12 +69,9 @@ const ScheduleCSS: React.FC = () => {
         @apply p-2 bg-white hover:bg-blue-50/30 transition-colors;
         min-width: 200px;
         width: 200px;
-        height: 100%;
         box-sizing: border-box;
         border-right: 1px solid #eaeaea;
         border-bottom: 1px solid #eaeaea;
-        overflow-y: auto;
-        max-height: 100px;
       }
       
       .delivery-item {
