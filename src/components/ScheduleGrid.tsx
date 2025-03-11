@@ -44,6 +44,7 @@ const ScheduleGrid: React.FC = () => {
 
     availableDrivers.forEach(driver => {
       result[driver.id] = {};
+      // Make sure we initialize every time slot for every driver
       scheduleDay.timeSlots.forEach(slot => {
         result[driver.id][slot.time] = [];
       });
@@ -110,16 +111,16 @@ const ScheduleGrid: React.FC = () => {
     };
   }, []);
 
+  // Debug output for time slots
   useEffect(() => {
-    // Debugging logs to verify time slots
-    console.log("Available time slots total:", scheduleDay.timeSlots.length);
+    console.log("Full time slots from context:", scheduleDay.timeSlots.length);
     console.log("First time slot:", scheduleDay.timeSlots[0]?.time, "Label:", scheduleDay.timeSlots[0]?.label);
     console.log("Last time slot:", scheduleDay.timeSlots[scheduleDay.timeSlots.length - 1]?.time, 
                 "Label:", scheduleDay.timeSlots[scheduleDay.timeSlots.length - 1]?.label);
     
-    // Log a few time slots to verify the full range
-    console.log("Sample time slots:");
-    const sampleIndices = [0, 8, 16, 24, 32, 40, 47]; // Sample indices across the range
+    // Log a few more time slots to verify the full range is being used
+    const sampleIndices = [0, 8, 16, 24, 32, 40, 43]; // Sample indices across the full range
+    console.log("Sample time slots across full range:");
     sampleIndices.forEach(index => {
       if (scheduleDay.timeSlots[index]) {
         console.log(`Slot ${index}: ${scheduleDay.timeSlots[index].time} - ${scheduleDay.timeSlots[index].label}`);
@@ -154,9 +155,6 @@ const ScheduleGrid: React.FC = () => {
     );
   }
 
-  // Use all time slots from the context without filtering
-  const allTimeSlots = scheduleDay.timeSlots;
-  
   return (
     <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
       <DateNavigator 
@@ -171,7 +169,7 @@ const ScheduleGrid: React.FC = () => {
           <ScheduleHeader availableDrivers={availableDrivers} />
 
           <div className="schedule-body">
-            {allTimeSlots.map((timeSlot, index) => (
+            {scheduleDay.timeSlots.map((timeSlot, index) => (
               <TimeRow
                 key={`${timeSlot.time}-${index}`}
                 timeSlot={timeSlot}
