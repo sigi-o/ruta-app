@@ -9,45 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      drivers: {
-        Row: {
-          available: boolean | null
-          color: string
-          created_at: string | null
-          id: string
-          name: string
-          notes: string | null
-          phone_number: string | null
-          updated_at: string | null
-          user_id: string
-          vehicle_type: string | null
-        }
-        Insert: {
-          available?: boolean | null
-          color: string
-          created_at?: string | null
-          id?: string
-          name: string
-          notes?: string | null
-          phone_number?: string | null
-          updated_at?: string | null
-          user_id: string
-          vehicle_type?: string | null
-        }
-        Update: {
-          available?: boolean | null
-          color?: string
-          created_at?: string | null
-          id?: string
-          name?: string
-          notes?: string | null
-          phone_number?: string | null
-          updated_at?: string | null
-          user_id?: string
-          vehicle_type?: string | null
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           avatar_url: string | null

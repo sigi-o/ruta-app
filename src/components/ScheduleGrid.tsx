@@ -13,6 +13,7 @@ import ScheduleCSS from './schedule/ScheduleCSS';
 import { useDragDrop } from './schedule/useDragDrop';
 
 const ScheduleGrid: React.FC = () => {
+  console.log("ScheduleGrid component rendering");
   const { scheduleDay, editStop } = useSchedule();
   const { currentDate, currentDateString, goToNextDay, goToPreviousDay, isDateValid } = useDateSystem();
   const [expandedStopId, setExpandedStopId] = useState<string | null>(null);
@@ -28,11 +29,16 @@ const ScheduleGrid: React.FC = () => {
     handleDrop
   } = useDragDrop(currentDateString);
 
-  // For debugging the number of time slots being rendered
+  // Log detailed information about time slots during rendering
   useEffect(() => {
-    console.log(`Total time slots available: ${scheduleDay.timeSlots.length}`);
+    console.log(`Time slots array length: ${scheduleDay.timeSlots.length}`);
     console.log(`First time slot: ${scheduleDay.timeSlots[0]?.time} (${scheduleDay.timeSlots[0]?.label})`);
     console.log(`Last time slot: ${scheduleDay.timeSlots[scheduleDay.timeSlots.length - 1]?.time} (${scheduleDay.timeSlots[scheduleDay.timeSlots.length - 1]?.label})`);
+    
+    // Print all time slots to ensure they're all there
+    scheduleDay.timeSlots.forEach((slot, index) => {
+      console.log(`Time slot ${index}: ${slot.time} (${slot.label})`);
+    });
   }, [scheduleDay.timeSlots]);
 
   const handleStopClick = (stopId: string) => {
@@ -145,6 +151,9 @@ const ScheduleGrid: React.FC = () => {
     );
   }
 
+  // Ensure we are rendering ALL time slots - DEBUG VERIFICATION
+  console.log(`Rendering schedule grid with ${scheduleDay.timeSlots.length} time slots`);
+
   return (
     <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
       <DateNavigator 
@@ -155,28 +164,29 @@ const ScheduleGrid: React.FC = () => {
       />
 
       <div className="flex-grow overflow-auto">
-        <div className="schedule-container relative">
-          <div className="sticky top-0 z-20 bg-white">
-            <ScheduleHeader availableDrivers={availableDrivers} />
-          </div>
+        <div className="schedule-container">
+          <ScheduleHeader availableDrivers={availableDrivers} />
 
           <div className="schedule-body">
-            {scheduleDay.timeSlots.map((timeSlot, index) => (
-              <TimeRow
-                key={`${timeSlot.time}-${index}`}
-                timeSlot={timeSlot}
-                availableDrivers={availableDrivers}
-                stopsByDriverAndTime={stopsByDriverAndTime}
-                draggingStop={draggingStop}
-                currentDateString={currentDateString}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                onDragStart={handleDragStart}
-                onDragEnd={() => setDraggingStop(null)}
-                onStopClick={handleStopClick}
-              />
-            ))}
+            {scheduleDay.timeSlots.map((timeSlot, index) => {
+              console.log(`Rendering time slot ${index}: ${timeSlot.time} (${timeSlot.label})`);
+              return (
+                <TimeRow
+                  key={`${timeSlot.time}-${index}`}
+                  timeSlot={timeSlot}
+                  availableDrivers={availableDrivers}
+                  stopsByDriverAndTime={stopsByDriverAndTime}
+                  draggingStop={draggingStop}
+                  currentDateString={currentDateString}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onDragStart={handleDragStart}
+                  onDragEnd={() => setDraggingStop(null)}
+                  onStopClick={handleStopClick}
+                />
+              );
+            })}
           </div>
         </div>
       </div>
