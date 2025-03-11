@@ -607,28 +607,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const addStop = async (stop: Omit<DeliveryStop, 'id' | 'status'>) => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "You must be logged in to add stops.",
-        variant: "destructive",
-      });
-      
-      const localNewStop: DeliveryStop = {
-        ...stop,
-        id: `stop-${Date.now()}`,
-        status: 'unassigned',
-        deliveryDate: stop.deliveryDate || currentDateString,
-      };
-  
-      setScheduleDay(prev => ({
-        ...prev,
-        stops: [...prev.stops, localNewStop],
-      }));
-      
-      return;
-    }
-
+    // Always generate a UUID for any new stop regardless of authentication status
     const newStopId = uuidv4();
     
     const newStop: DeliveryStop = {
@@ -638,49 +617,65 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       deliveryDate: stop.deliveryDate || currentDateString,
     };
 
-    try {
-      const { error } = await supabase
-        .from('delivery_stops')
-        .insert({
-          id: newStopId,
-          user_id: user.id,
-          business_name: stop.businessName,
-          client_name: stop.clientName || null,
-          address: stop.address,
-          delivery_time: stop.deliveryTime,
-          delivery_date: stop.deliveryDate || currentDateString,
-          special_instructions: stop.specialInstructions || null,
-          status: 'unassigned',
-          driver_id: null,
-          order_number: stop.orderNumber || null,
-          contact_phone: stop.contactPhone || null,
-          stop_type: stop.stopType,
-        });
+    setScheduleDay(prev => ({
+      ...prev,
+      stops: [...prev.stops, newStop],
+    }));
 
-      if (error) throw error;
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('delivery_stops')
+          .insert({
+            id: newStopId,
+            user_id: user.id,
+            business_name: stop.businessName,
+            client_name: stop.clientName || null,
+            address: stop.address,
+            delivery_time: stop.deliveryTime,
+            delivery_date: stop.deliveryDate || currentDateString,
+            special_instructions: stop.specialInstructions || null,
+            status: 'unassigned',
+            driver_id: null,
+            order_number: stop.orderNumber || null,
+            contact_phone: stop.contactPhone || null,
+            stop_type: stop.stopType,
+          });
 
-      setScheduleDay(prev => ({
-        ...prev,
-        stops: [...prev.stops, newStop],
-      }));
+        if (error) {
+          throw error;
+        }
 
-      if (newStop.deliveryDate !== currentDateString) {
+        if (newStop.deliveryDate !== currentDateString) {
+          toast({
+            title: "Different Delivery Date",
+            description: `This stop is scheduled for ${newStop.deliveryDate}, not the currently selected date (${currentDateString}).`,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Stop Added",
+            description: `${stop.businessName} has been added to the schedule.`,
+          });
+        }
+      } catch (error) {
+        console.error('Error adding stop to database:', error);
         toast({
-          title: "Different Delivery Date",
-          description: `This stop is scheduled for ${newStop.deliveryDate}, not the currently selected date (${currentDateString}).`,
+          title: "Error Adding Stop",
+          description: "Failed to add stop to the database.",
           variant: "destructive",
         });
-      } else {
-        toast({
-          title: "Stop Added",
-          description: `${stop.businessName} has been added to the schedule.`,
-        });
+        
+        // Remove the stop from the local state if database insertion fails
+        setScheduleDay(prev => ({
+          ...prev,
+          stops: prev.stops.filter(s => s.id !== newStopId),
+        }));
       }
-    } catch (error) {
-      console.error('Error adding stop to database:', error);
+    } else {
       toast({
-        title: "Error Adding Stop",
-        description: "Failed to add stop to the database.",
+        title: "Authentication Required",
+        description: "You must be logged in to permanently save this stop. It will be available only in this session.",
         variant: "destructive",
       });
     }
@@ -748,6 +743,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const removeStop = async (stopId: string) => {
+    // All stops should have UUID format IDs now, so they should all be valid for database operations
     setScheduleDay(prev => ({
       ...prev,
       stops: prev.stops.filter(stop => stop.id !== stopId),
@@ -755,10 +751,16 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     if (user) {
       try {
+        // We still keep the UUID validation check as a safety measure
         const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(stopId);
         
         if (!isValidUUID) {
-          console.log('Skip database delete for non-UUID stop ID:', stopId);
+          console.error('Invalid UUID format for stopId:', stopId);
+          toast({
+            title: "Error Removing Stop",
+            description: "The stop could not be removed from the database due to an invalid ID format.",
+            variant: "destructive",
+          });
           return;
         }
         
@@ -976,25 +978,57 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setIsLoading(true);
     
     setTimeout(() => {
-      const newStops: DeliveryStop[] = data.map((row, index) => ({
-        id: `import-${Date.now()}-${index}`,
-        businessName: row.businessName || row.business_name || row.company || '',
-        clientName: row.clientName || row.customer_name || row.client || '',
-        address: row.address || row.delivery_address || row.location || '',
-        deliveryTime: row.deliveryTime || row.delivery_time || row.time || '12:00',
-        deliveryDate: row.deliveryDate || row.delivery_date || row.date || currentDateString,
-        status: 'unassigned' as const,
-        orderNumber: row.orderNumber || row.order_number || row.order_id || `ORD-${index + 100}`,
-        contactPhone: row.contactPhone || row.phone || row.contact || '',
-        specialInstructions: row.specialInstructions || row.instructions || row.notes || '',
-        items: row.items ? (typeof row.items === 'string' ? [row.items] : row.items) : [],
-        stopType: 'delivery' as const
-      }));
+      const newStops: DeliveryStop[] = data.map((row) => {
+        // Generate a proper UUID for each imported stop
+        const newStopId = uuidv4();
+        
+        return {
+          id: newStopId,
+          businessName: row.businessName || row.business_name || row.company || '',
+          clientName: row.clientName || row.customer_name || row.client || '',
+          address: row.address || row.delivery_address || row.location || '',
+          deliveryTime: row.deliveryTime || row.delivery_time || row.time || '12:00',
+          deliveryDate: row.deliveryDate || row.delivery_date || row.date || currentDateString,
+          status: 'unassigned' as const,
+          orderNumber: row.orderNumber || row.order_number || row.order_id || '',
+          contactPhone: row.contactPhone || row.phone || row.contact || '',
+          specialInstructions: row.specialInstructions || row.instructions || row.notes || '',
+          items: row.items ? (typeof row.items === 'string' ? [row.items] : row.items) : [],
+          stopType: 'delivery' as const
+        };
+      });
       
       setScheduleDay(prev => ({
         ...prev,
         stops: [...prev.stops, ...newStops],
       }));
+      
+      // If user is logged in, also add the imported stops to the database
+      if (user) {
+        newStops.forEach(async (stop) => {
+          try {
+            await supabase
+              .from('delivery_stops')
+              .insert({
+                id: stop.id,
+                user_id: user.id,
+                business_name: stop.businessName,
+                client_name: stop.clientName || null,
+                address: stop.address,
+                delivery_time: stop.deliveryTime,
+                delivery_date: stop.deliveryDate,
+                special_instructions: stop.specialInstructions || null,
+                status: 'unassigned',
+                driver_id: null,
+                order_number: stop.orderNumber || null,
+                contact_phone: stop.contactPhone || null,
+                stop_type: stop.stopType,
+              });
+          } catch (error) {
+            console.error('Error adding imported stop to database:', error);
+          }
+        });
+      }
       
       setIsLoading(false);
       toast({
