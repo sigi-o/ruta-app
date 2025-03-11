@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { useDateSystem } from './DateContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
+import { v4 as uuidv4 } from 'uuid';
 
 interface ScheduleContextType {
   scheduleDay: ScheduleDay;
@@ -28,7 +29,6 @@ interface ScheduleContextType {
   syncDriversWithDatabase: () => Promise<void>;
 }
 
-// Generate time slots from 2:00 AM to 11:30 PM with 30-minute intervals
 const defaultTimeSlots = generateTimeSlots('02:00', '23:30', 30);
 const today = format(new Date(), 'yyyy-MM-dd');
 
@@ -303,7 +303,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return;
     }
 
-    const newDriverId = `driver-${Date.now()}`;
+    const newDriverId = uuidv4();
     
     const newDriver: Driver = {
       ...driver,
