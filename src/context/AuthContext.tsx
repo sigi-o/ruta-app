@@ -1,5 +1,5 @@
 
-import React, { createContext,useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -74,8 +74,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       }
       
-      // Clear any stored tokens from localStorage just to be safe
-      localStorage.removeItem('sb-' + supabase.projectId + '-auth-token');
+      // Clear any stored tokens from localStorage without using projectId
+      // Look for keys that match the Supabase auth token pattern
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+          localStorage.removeItem(key);
+        }
+      });
       
     } catch (error: any) {
       console.error('Exception during sign out:', error);
