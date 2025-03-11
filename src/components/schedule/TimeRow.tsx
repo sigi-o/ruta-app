@@ -31,7 +31,7 @@ const TimeRow: React.FC<TimeRowProps> = ({
   onStopClick
 }) => {
   return (
-    <div key={timeSlot.time} className="time-row">
+    <div key={timeSlot.time} className="time-row" data-time={timeSlot.time}>
       <div className="time-label">
         {timeSlot.label}
       </div>

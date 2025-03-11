@@ -13,6 +13,7 @@ import ScheduleCSS from './schedule/ScheduleCSS';
 import { useDragDrop } from './schedule/useDragDrop';
 
 const ScheduleGrid: React.FC = () => {
+  console.log("ScheduleGrid component rendering");
   const { scheduleDay, editStop } = useSchedule();
   const { currentDate, currentDateString, goToNextDay, goToPreviousDay, isDateValid } = useDateSystem();
   const [expandedStopId, setExpandedStopId] = useState<string | null>(null);
@@ -28,6 +29,18 @@ const ScheduleGrid: React.FC = () => {
     handleDrop
   } = useDragDrop(currentDateString);
 
+  // Log detailed information about time slots during initial render
+  useEffect(() => {
+    console.log(`Time slots array length: ${scheduleDay.timeSlots.length}`);
+    console.log(`First time slot: ${scheduleDay.timeSlots[0]?.time} (${scheduleDay.timeSlots[0]?.label})`);
+    console.log(`Last time slot: ${scheduleDay.timeSlots[scheduleDay.timeSlots.length - 1]?.time} (${scheduleDay.timeSlots[scheduleDay.timeSlots.length - 1]?.label})`);
+    
+    // Print all time slots to ensure they're all there
+    scheduleDay.timeSlots.forEach((slot, index) => {
+      console.log(`Time slot ${index}: ${slot.time} (${slot.label})`);
+    });
+  }, [scheduleDay.timeSlots]);
+
   const handleStopClick = (stopId: string) => {
     if (expandedStopId === stopId) {
       setExpandedStopId(null);
@@ -42,9 +55,9 @@ const ScheduleGrid: React.FC = () => {
     
     const availableDrivers = scheduleDay.drivers.filter(driver => driver.available !== false);
 
+    // Initialize all time slots for all drivers
     availableDrivers.forEach(driver => {
       result[driver.id] = {};
-      // Make sure we initialize every time slot for every driver
       scheduleDay.timeSlots.forEach(slot => {
         result[driver.id][slot.time] = [];
       });
@@ -111,23 +124,6 @@ const ScheduleGrid: React.FC = () => {
     };
   }, []);
 
-  // Debug output for time slots
-  useEffect(() => {
-    console.log("Full time slots from context:", scheduleDay.timeSlots.length);
-    console.log("First time slot:", scheduleDay.timeSlots[0]?.time, "Label:", scheduleDay.timeSlots[0]?.label);
-    console.log("Last time slot:", scheduleDay.timeSlots[scheduleDay.timeSlots.length - 1]?.time, 
-                "Label:", scheduleDay.timeSlots[scheduleDay.timeSlots.length - 1]?.label);
-    
-    // Log a few more time slots to verify the full range is being used
-    const sampleIndices = [0, 8, 16, 24, 32, 40, 43]; // Sample indices across the full range
-    console.log("Sample time slots across full range:");
-    sampleIndices.forEach(index => {
-      if (scheduleDay.timeSlots[index]) {
-        console.log(`Slot ${index}: ${scheduleDay.timeSlots[index].time} - ${scheduleDay.timeSlots[index].label}`);
-      }
-    });
-  }, [scheduleDay.timeSlots]);
-
   const availableDrivers = scheduleDay.drivers.filter(driver => driver.available !== false);
   const stopsByDriverAndTime = getStopsByDriverAndTime();
 
@@ -155,6 +151,9 @@ const ScheduleGrid: React.FC = () => {
     );
   }
 
+  // Ensure we are rendering ALL time slots
+  console.log(`Rendering schedule grid with ${scheduleDay.timeSlots.length} time slots`);
+
   return (
     <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
       <DateNavigator 
@@ -169,22 +168,25 @@ const ScheduleGrid: React.FC = () => {
           <ScheduleHeader availableDrivers={availableDrivers} />
 
           <div className="schedule-body">
-            {scheduleDay.timeSlots.map((timeSlot, index) => (
-              <TimeRow
-                key={`${timeSlot.time}-${index}`}
-                timeSlot={timeSlot}
-                availableDrivers={availableDrivers}
-                stopsByDriverAndTime={stopsByDriverAndTime}
-                draggingStop={draggingStop}
-                currentDateString={currentDateString}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                onDragStart={handleDragStart}
-                onDragEnd={() => setDraggingStop(null)}
-                onStopClick={handleStopClick}
-              />
-            ))}
+            {scheduleDay.timeSlots.map((timeSlot, index) => {
+              console.log(`Rendering time slot ${index}: ${timeSlot.time} (${timeSlot.label})`);
+              return (
+                <TimeRow
+                  key={`${timeSlot.time}-${index}`}
+                  timeSlot={timeSlot}
+                  availableDrivers={availableDrivers}
+                  stopsByDriverAndTime={stopsByDriverAndTime}
+                  draggingStop={draggingStop}
+                  currentDateString={currentDateString}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onDragStart={handleDragStart}
+                  onDragEnd={() => setDraggingStop(null)}
+                  onStopClick={handleStopClick}
+                />
+              );
+            })}
           </div>
         </div>
       </div>
