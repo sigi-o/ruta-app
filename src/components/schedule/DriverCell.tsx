@@ -32,25 +32,27 @@ const DriverCell: React.FC<DriverCellProps> = ({
 }) => {
   return (
     <div
-      className="driver-cell min-w-[150px] border-r border-b border-gray-200 h-full"
+      className="driver-cell"
       data-driver-id={driver.id}
       data-time-slot={timeSlot}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={(e) => onDrop(e, driver.id, timeSlot)}
     >
-      {stops.map(stop => (
-        <StopItem 
-          key={stop.id}
-          stop={stop}
-          driverColor={driver.color}
-          draggingStop={draggingStop}
-          currentDateString={currentDateString}
-          onDragStart={onDragStart}
-          onDragEnd={onDragEnd}
-          onClick={() => onStopClick(stop.id)}
-        />
-      ))}
+      <div className="h-full overflow-y-auto">
+        {stops.map(stop => (
+          <StopItem 
+            key={stop.id}
+            stop={stop}
+            driverColor={driver.color}
+            draggingStop={draggingStop}
+            currentDateString={currentDateString}
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
+            onClick={() => onStopClick(stop.id)}
+          />
+        ))}
+      </div>
     </div>
   );
 };

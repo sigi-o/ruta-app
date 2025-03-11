@@ -70,15 +70,19 @@ const ScheduleCSS: React.FC = () => {
         @apply p-2 bg-white hover:bg-blue-50/30 transition-colors;
         min-width: 200px;
         width: 200px;
+        height: 100%;
         box-sizing: border-box;
         border-right: 1px solid #eaeaea;
         border-bottom: 1px solid #eaeaea;
+        overflow-y: auto;
+        max-height: 100px;
       }
       
       .delivery-item {
         @apply p-2 rounded-md shadow-sm text-sm mb-1 cursor-grab active:cursor-grabbing;
         transition: transform 0.15s ease, box-shadow 0.15s ease;
         z-index: 1;
+        overflow: visible;
       }
       
       .delivery-item:hover {
