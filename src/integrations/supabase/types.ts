@@ -9,6 +9,60 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      delivery_stops: {
+        Row: {
+          address: string
+          business_name: string
+          client_name: string | null
+          contact_phone: string | null
+          created_at: string
+          delivery_date: string
+          delivery_time: string
+          driver_id: string | null
+          id: string
+          order_number: string | null
+          special_instructions: string | null
+          status: string
+          stop_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          business_name: string
+          client_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          delivery_date: string
+          delivery_time: string
+          driver_id?: string | null
+          id?: string
+          order_number?: string | null
+          special_instructions?: string | null
+          status: string
+          stop_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          business_name?: string
+          client_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          delivery_date?: string
+          delivery_time?: string
+          driver_id?: string | null
+          id?: string
+          order_number?: string | null
+          special_instructions?: string | null
+          status?: string
+          stop_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       drivers: {
         Row: {
           available: boolean | null

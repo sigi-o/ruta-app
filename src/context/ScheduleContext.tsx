@@ -27,6 +27,7 @@ interface ScheduleContextType {
   duplicateStop: (stopId: string) => void;
   getStopsForDate: (date: string) => DeliveryStop[];
   syncDriversWithDatabase: () => Promise<void>;
+  syncStopsWithDatabase: () => Promise<void>;
 }
 
 const defaultTimeSlots = generateTimeSlots('02:00', '23:30', 30);
@@ -125,6 +126,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       if (user) {
         fetchDriversFromDatabase();
+        fetchStopsFromDatabase();
       }
     }
     
@@ -148,8 +150,63 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     if (user) {
       fetchDriversFromDatabase();
+      fetchStopsFromDatabase();
     }
   }, [user]);
+
+  const fetchStopsFromDatabase = async () => {
+    if (!user) return;
+    
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('delivery_stops')
+        .select('*')
+        .eq('user_id', user.id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data && data.length > 0) {
+        const stops: DeliveryStop[] = data.map(dbStop => ({
+          id: dbStop.id,
+          businessName: dbStop.business_name,
+          clientName: dbStop.client_name || undefined,
+          address: dbStop.address,
+          deliveryTime: dbStop.delivery_time,
+          deliveryDate: dbStop.delivery_date,
+          specialInstructions: dbStop.special_instructions || undefined,
+          status: dbStop.status as 'unassigned' | 'assigned',
+          driverId: dbStop.driver_id || undefined,
+          orderNumber: dbStop.order_number || undefined,
+          contactPhone: dbStop.contact_phone || undefined,
+          stopType: dbStop.stop_type as 'delivery' | 'pickup' | 'other',
+        }));
+        
+        setScheduleDay(prev => ({
+          ...prev,
+          stops: [...prev.stops, ...stops.filter(stop => 
+            !prev.stops.some(existingStop => existingStop.id === stop.id)
+          )],
+        }));
+        
+        toast({
+          title: "Stops Loaded",
+          description: `${stops.length} stops loaded from database.`,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching stops:', error);
+      toast({
+        title: "Error Loading Stops",
+        description: "Failed to load stops from the database.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const fetchDriversFromDatabase = async () => {
     if (!user) return;
@@ -191,6 +248,107 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       toast({
         title: "Error Loading Drivers",
         description: "Failed to load drivers from the database.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const syncStopsWithDatabase = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to sync with the database.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      
+      const { data: dbStops, error: fetchError } = await supabase
+        .from('delivery_stops')
+        .select('id')
+        .eq('user_id', user.id);
+      
+      if (fetchError) throw fetchError;
+      
+      const dbStopIds = new Set((dbStops || []).map(d => d.id));
+      const currentStops = scheduleDay.stops;
+      
+      const stopsToAdd = currentStops.filter(s => !dbStopIds.has(s.id));
+      const stopsToUpdate = currentStops.filter(s => dbStopIds.has(s.id));
+      const stopsToDelete = Array.from(dbStopIds).filter(
+        id => !currentStops.some(s => s.id === id)
+      );
+      
+      if (stopsToAdd.length > 0) {
+        const { error: insertError } = await supabase
+          .from('delivery_stops')
+          .insert(stopsToAdd.map(stop => ({
+            id: stop.id,
+            user_id: user.id,
+            business_name: stop.businessName,
+            client_name: stop.clientName || null,
+            address: stop.address,
+            delivery_time: stop.deliveryTime,
+            delivery_date: stop.deliveryDate,
+            special_instructions: stop.specialInstructions || null,
+            status: stop.status,
+            driver_id: stop.driverId || null,
+            order_number: stop.orderNumber || null,
+            contact_phone: stop.contactPhone || null,
+            stop_type: stop.stopType,
+          })));
+        
+        if (insertError) throw insertError;
+      }
+      
+      for (const stop of stopsToUpdate) {
+        const { error: updateError } = await supabase
+          .from('delivery_stops')
+          .update({
+            business_name: stop.businessName,
+            client_name: stop.clientName || null,
+            address: stop.address,
+            delivery_time: stop.deliveryTime,
+            delivery_date: stop.deliveryDate,
+            special_instructions: stop.specialInstructions || null,
+            status: stop.status,
+            driver_id: stop.driverId || null,
+            order_number: stop.orderNumber || null,
+            contact_phone: stop.contactPhone || null,
+            stop_type: stop.stopType,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', stop.id)
+          .eq('user_id', user.id);
+        
+        if (updateError) throw updateError;
+      }
+      
+      if (stopsToDelete.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('delivery_stops')
+          .delete()
+          .in('id', stopsToDelete)
+          .eq('user_id', user.id);
+        
+        if (deleteError) throw deleteError;
+      }
+      
+      toast({
+        title: "Sync Complete",
+        description: `Added: ${stopsToAdd.length}, Updated: ${stopsToUpdate.length}, Deleted: ${stopsToDelete.length}`,
+      });
+      
+    } catch (error) {
+      console.error('Error syncing stops with database:', error);
+      toast({
+        title: "Sync Failed",
+        description: "Failed to synchronize stops with the database.",
         variant: "destructive",
       });
     } finally {
@@ -458,29 +616,87 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  const addStop = (stop: Omit<DeliveryStop, 'id' | 'status'>) => {
+  const addStop = async (stop: Omit<DeliveryStop, 'id' | 'status'>) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to add stops.",
+        variant: "destructive",
+      });
+      
+      const localNewStop: DeliveryStop = {
+        ...stop,
+        id: `stop-${Date.now()}`,
+        status: 'unassigned',
+        deliveryDate: stop.deliveryDate || currentDateString,
+      };
+  
+      setScheduleDay(prev => ({
+        ...prev,
+        stops: [...prev.stops, localNewStop],
+      }));
+      
+      return;
+    }
+
+    const newStopId = uuidv4();
+    
     const newStop: DeliveryStop = {
       ...stop,
-      id: `stop-${Date.now()}`,
+      id: newStopId,
       status: 'unassigned',
       deliveryDate: stop.deliveryDate || currentDateString,
     };
 
-    setScheduleDay(prev => ({
-      ...prev,
-      stops: [...prev.stops, newStop],
-    }));
+    try {
+      const { error } = await supabase
+        .from('delivery_stops')
+        .insert({
+          id: newStopId,
+          user_id: user.id,
+          business_name: stop.businessName,
+          client_name: stop.clientName || null,
+          address: stop.address,
+          delivery_time: stop.deliveryTime,
+          delivery_date: stop.deliveryDate || currentDateString,
+          special_instructions: stop.specialInstructions || null,
+          status: 'unassigned',
+          driver_id: null,
+          order_number: stop.orderNumber || null,
+          contact_phone: stop.contactPhone || null,
+          stop_type: stop.stopType,
+        });
 
-    if (newStop.deliveryDate !== currentDateString) {
+      if (error) throw error;
+
+      setScheduleDay(prev => ({
+        ...prev,
+        stops: [...prev.stops, newStop],
+      }));
+
+      if (newStop.deliveryDate !== currentDateString) {
+        toast({
+          title: "Different Delivery Date",
+          description: `This stop is scheduled for ${newStop.deliveryDate}, not the currently selected date (${currentDateString}).`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Stop Added",
+          description: `${stop.businessName} has been added to the schedule.`,
+        });
+      }
+    } catch (error) {
+      console.error('Error adding stop to database:', error);
       toast({
-        title: "Different Delivery Date",
-        description: `This stop is scheduled for ${newStop.deliveryDate}, not the currently selected date (${currentDateString}).`,
+        title: "Error Adding Stop",
+        description: "Failed to add stop to the database.",
         variant: "destructive",
       });
     }
   };
 
-  const updateStop = (stopId: string, updatedStop: Partial<DeliveryStop>) => {
+  const updateStop = async (stopId: string, updatedStop: Partial<DeliveryStop>) => {
     setScheduleDay(prev => {
       const originalStop = prev.stops.find(s => s.id === stopId);
       const isDateChanging = updatedStop.deliveryDate && originalStop?.deliveryDate !== updatedStop.deliveryDate;
@@ -504,21 +720,80 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         stops: updatedStops,
       };
     });
+
+    if (user) {
+      try {
+        const updatedFields: any = {};
+        
+        if (updatedStop.businessName) updatedFields.business_name = updatedStop.businessName;
+        if (updatedStop.clientName !== undefined) updatedFields.client_name = updatedStop.clientName || null;
+        if (updatedStop.address) updatedFields.address = updatedStop.address;
+        if (updatedStop.deliveryTime) updatedFields.delivery_time = updatedStop.deliveryTime;
+        if (updatedStop.deliveryDate) updatedFields.delivery_date = updatedStop.deliveryDate;
+        if (updatedStop.specialInstructions !== undefined) updatedFields.special_instructions = updatedStop.specialInstructions || null;
+        if (updatedStop.status) updatedFields.status = updatedStop.status;
+        if (updatedStop.driverId !== undefined) updatedFields.driver_id = updatedStop.driverId || null;
+        if (updatedStop.orderNumber !== undefined) updatedFields.order_number = updatedStop.orderNumber || null;
+        if (updatedStop.contactPhone !== undefined) updatedFields.contact_phone = updatedStop.contactPhone || null;
+        if (updatedStop.stopType) updatedFields.stop_type = updatedStop.stopType;
+        
+        updatedFields.updated_at = new Date().toISOString();
+
+        const { error } = await supabase
+          .from('delivery_stops')
+          .update(updatedFields)
+          .eq('id', stopId)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      } catch (error) {
+        console.error('Error updating stop in database:', error);
+        toast({
+          title: "Database Update Failed",
+          description: "The stop was updated locally but failed to update in the database.",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
-  const removeStop = (stopId: string) => {
+  const removeStop = async (stopId: string) => {
     setScheduleDay(prev => ({
       ...prev,
       stops: prev.stops.filter(stop => stop.id !== stopId),
     }));
     
-    toast({
-      title: "Stop Removed",
-      description: "The stop has been removed from the schedule.",
-    });
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('delivery_stops')
+          .delete()
+          .eq('id', stopId)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+        
+        toast({
+          title: "Stop Removed",
+          description: "The stop has been removed from the schedule.",
+        });
+      } catch (error) {
+        console.error('Error removing stop from database:', error);
+        toast({
+          title: "Database Removal Failed",
+          description: "The stop was removed locally but failed to delete from the database.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      toast({
+        title: "Stop Removed",
+        description: "The stop has been removed from the schedule.",
+      });
+    }
   };
 
-  const assignStop = (stopId: string, driverId: string) => {
+  const assignStop = async (stopId: string, driverId: string) => {
     setScheduleDay(prev => ({
       ...prev,
       stops: prev.stops.map(stop => 
@@ -531,9 +806,27 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           : stop
       ),
     }));
+
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('delivery_stops')
+          .update({
+            driver_id: driverId,
+            status: 'assigned',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', stopId)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      } catch (error) {
+        console.error('Error assigning stop in database:', error);
+      }
+    }
   };
 
-  const unassignStop = (stopId: string) => {
+  const unassignStop = async (stopId: string) => {
     setScheduleDay(prev => ({
       ...prev,
       stops: prev.stops.map(stop => 
@@ -546,6 +839,24 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           : stop
       ),
     }));
+
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('delivery_stops')
+          .update({
+            driver_id: null,
+            status: 'unassigned',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', stopId)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      } catch (error) {
+        console.error('Error unassigning stop in database:', error);
+      }
+    }
   };
 
   const autoAssignStops = () => {
@@ -691,27 +1002,58 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  const duplicateStop = (stopId: string) => {
-    setScheduleDay(prev => {
-      const stopToDuplicate = prev.stops.find(stop => stop.id === stopId);
-      
-      if (!stopToDuplicate) {
-        return prev;
+  const duplicateStop = async (stopId: string) => {
+    const stopToDuplicate = scheduleDay.stops.find(stop => stop.id === stopId);
+    
+    if (!stopToDuplicate) {
+      return;
+    }
+    
+    const newStopId = uuidv4();
+    
+    const duplicatedStop: DeliveryStop = {
+      ...stopToDuplicate,
+      id: newStopId,
+      status: 'unassigned',
+      driverId: undefined,
+      orderNumber: stopToDuplicate.orderNumber ? `${stopToDuplicate.orderNumber}-copy` : undefined,
+    };
+    
+    setScheduleDay(prev => ({
+      ...prev,
+      stops: [...prev.stops, duplicatedStop],
+    }));
+    
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('delivery_stops')
+          .insert({
+            id: newStopId,
+            user_id: user.id,
+            business_name: stopToDuplicate.businessName,
+            client_name: stopToDuplicate.clientName || null,
+            address: stopToDuplicate.address,
+            delivery_time: stopToDuplicate.deliveryTime,
+            delivery_date: stopToDuplicate.deliveryDate,
+            special_instructions: stopToDuplicate.specialInstructions || null,
+            status: 'unassigned',
+            driver_id: null,
+            order_number: duplicatedStop.orderNumber || null,
+            contact_phone: stopToDuplicate.contactPhone || null,
+            stop_type: stopToDuplicate.stopType,
+          });
+
+        if (error) throw error;
+      } catch (error) {
+        console.error('Error duplicating stop in database:', error);
+        toast({
+          title: "Database Duplication Failed",
+          description: "The stop was duplicated locally but failed to save to the database.",
+          variant: "destructive",
+        });
       }
-      
-      const duplicatedStop: DeliveryStop = {
-        ...stopToDuplicate,
-        id: `stop-${Date.now()}`,
-        status: 'unassigned',
-        driverId: undefined,
-        orderNumber: stopToDuplicate.orderNumber ? `${stopToDuplicate.orderNumber}-copy` : undefined,
-      };
-      
-      return {
-        ...prev,
-        stops: [...prev.stops, duplicatedStop],
-      };
-    });
+    }
     
     toast({
       title: "Stop Duplicated",
@@ -738,7 +1080,8 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       editStop,
       duplicateStop,
       getStopsForDate,
-      syncDriversWithDatabase
+      syncDriversWithDatabase,
+      syncStopsWithDatabase
     }}>
       {children}
     </ScheduleContext.Provider>
