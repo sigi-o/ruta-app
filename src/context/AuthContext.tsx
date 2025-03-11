@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext,useContext, useState, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -53,35 +53,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       setLoading(true);
+      // Clear session state first to prevent race conditions
+      setSession(null);
+      setUser(null);
       
       const { error } = await supabase.auth.signOut();
       
       if (error) {
         console.error('Error signing out:', error);
+        // Even if there's an error, we want to clear the local state
         toast({
-          title: "Error signing out",
-          description: error.message,
-          variant: "destructive",
+          title: "Warning",
+          description: "Your session has been cleared locally. You may need to refresh the page.",
+          variant: "warning",
         });
       } else {
-        // Force reset the state even if the API call fails
-        setSession(null);
-        setUser(null);
-        
         toast({
           title: "Signed out successfully",
           description: "You have been logged out",
         });
-        
-        // Attempt to clear any stored tokens from localStorage
-        localStorage.removeItem('supabase.auth.token');
-        localStorage.removeItem('supabase.auth.refreshToken');
       }
+      
+      // Clear any stored tokens from localStorage just to be safe
+      localStorage.removeItem('sb-' + supabase.projectId + '-auth-token');
+      
     } catch (error: any) {
       console.error('Exception during sign out:', error);
       toast({
-        title: "Error signing out",
-        description: error.message || "An unexpected error occurred",
+        title: "Error",
+        description: "An error occurred while signing out. Please try refreshing the page.",
         variant: "destructive",
       });
     } finally {
