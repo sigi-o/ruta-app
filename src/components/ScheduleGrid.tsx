@@ -29,7 +29,7 @@ const ScheduleGrid: React.FC = () => {
     handleDrop
   } = useDragDrop(currentDateString);
 
-  // Log detailed information about time slots during rendering
+  // Log detailed information about time slots during initial render
   useEffect(() => {
     console.log(`Time slots array length: ${scheduleDay.timeSlots.length}`);
     console.log(`First time slot: ${scheduleDay.timeSlots[0]?.time} (${scheduleDay.timeSlots[0]?.label})`);
@@ -151,7 +151,7 @@ const ScheduleGrid: React.FC = () => {
     );
   }
 
-  // Ensure we are rendering ALL time slots - DEBUG VERIFICATION
+  // Ensure we are rendering ALL time slots
   console.log(`Rendering schedule grid with ${scheduleDay.timeSlots.length} time slots`);
 
   return (
@@ -164,7 +164,7 @@ const ScheduleGrid: React.FC = () => {
       />
 
       <div className="flex-grow overflow-auto">
-        <div className="schedule-container">
+        <div className="schedule-container overflow-auto">
           <ScheduleHeader availableDrivers={availableDrivers} />
 
           <div className="schedule-body">
