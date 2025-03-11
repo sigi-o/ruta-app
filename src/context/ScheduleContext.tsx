@@ -755,13 +755,23 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     if (user) {
       try {
+        const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(stopId);
+        
+        if (!isValidUUID) {
+          console.log('Skip database delete for non-UUID stop ID:', stopId);
+          return;
+        }
+        
         const { error } = await supabase
           .from('delivery_stops')
           .delete()
           .eq('id', stopId)
           .eq('user_id', user.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Database error when deleting stop:', error);
+          throw error;
+        }
         
         toast({
           title: "Stop Removed",

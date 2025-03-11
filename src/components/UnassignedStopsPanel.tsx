@@ -123,6 +123,8 @@ const UnassignedStopsPanel: React.FC = () => {
     if (e) {
       e.stopPropagation();
     }
+    
+    console.log('Deleting stop with ID:', stopId);
     removeStop(stopId);
     
     if (isEditModalOpen) {
