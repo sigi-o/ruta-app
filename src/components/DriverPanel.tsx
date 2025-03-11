@@ -1,13 +1,15 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { Driver } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trash2, Plus, User, Phone, UserX, PaintBucket, UserCheck, Pencil } from 'lucide-react';
+import { Trash2, Plus, User, Phone, UserX, PaintBucket, UserCheck, Pencil, Save, RefreshCcw } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const driverColors = [
   '#3B82F6', // Blue
@@ -23,10 +25,14 @@ const driverColors = [
 ];
 
 const DriverPanel: React.FC = () => {
-  const { scheduleDay, addDriver, removeDriver, updateDriver } = useSchedule();
+  const { scheduleDay, addDriver, removeDriver, updateDriver, syncDriversWithDatabase } = useSchedule();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
   const [newDriver, setNewDriver] = useState<Omit<Driver, 'id'>>({
     name: '',
     color: driverColors[0],
@@ -56,31 +62,58 @@ const DriverPanel: React.FC = () => {
     setSelectedDriver(prev => prev ? { ...prev, color } : null);
   };
 
-  const handleAddDriver = () => {
-    if (newDriver.name.trim()) {
-      addDriver(newDriver);
-      setNewDriver({
-        name: '',
-        color: driverColors[Math.floor(Math.random() * driverColors.length)],
-        vehicleType: '',
-        phoneNumber: '',
-        notes: '',
-        available: true,
-      });
-      setIsAddDialogOpen(false);
+  const handleAddDriver = async () => {
+    if (newDriver.name.trim() && user) {
+      try {
+        addDriver(newDriver);
+        setNewDriver({
+          name: '',
+          color: driverColors[Math.floor(Math.random() * driverColors.length)],
+          vehicleType: '',
+          phoneNumber: '',
+          notes: '',
+          available: true,
+        });
+        setIsAddDialogOpen(false);
+      } catch (error) {
+        console.error('Error adding driver:', error);
+        toast({
+          title: "Error",
+          description: "Failed to add driver. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
-  const handleRemoveDriver = (driverId: string) => {
-    removeDriver(driverId);
-    setIsEditDialogOpen(false);
+  const handleRemoveDriver = async (driverId: string) => {
+    try {
+      await removeDriver(driverId);
+      setIsEditDialogOpen(false);
+    } catch (error) {
+      console.error('Error removing driver:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove driver. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleEditDriver = () => {
+  const handleEditDriver = async () => {
     if (selectedDriver && selectedDriver.name.trim()) {
-      updateDriver(selectedDriver.id, selectedDriver);
-      setIsEditDialogOpen(false);
-      setSelectedDriver(null);
+      try {
+        await updateDriver(selectedDriver.id, selectedDriver);
+        setIsEditDialogOpen(false);
+        setSelectedDriver(null);
+      } catch (error) {
+        console.error('Error updating driver:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update driver. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -99,10 +132,49 @@ const DriverPanel: React.FC = () => {
     }
   };
 
+  const handleSyncDrivers = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to sync drivers.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsSyncing(true);
+    try {
+      await syncDriversWithDatabase();
+      toast({
+        title: "Sync Complete",
+        description: "Drivers have been synchronized with the database.",
+      });
+    } catch (error) {
+      console.error('Error syncing drivers:', error);
+      toast({
+        title: "Sync Failed",
+        description: "Failed to synchronize drivers. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col">
-      <div className="p-4 header-gradient rounded-t-lg">
+      <div className="p-4 header-gradient rounded-t-lg flex justify-between items-center">
         <h2 className="text-lg font-medium">Drivers</h2>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={handleSyncDrivers} 
+          disabled={isSyncing || !user}
+          className="h-8 w-8"
+          title="Sync with database"
+        >
+          <RefreshCcw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+        </Button>
       </div>
       
       <div className="p-4 flex-grow overflow-y-auto">
@@ -234,7 +306,7 @@ const DriverPanel: React.FC = () => {
               <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleAddDriver} disabled={!newDriver.name.trim()}>
+              <Button onClick={handleAddDriver} disabled={!newDriver.name.trim() || !user}>
                 Add Driver
               </Button>
             </DialogFooter>
@@ -336,7 +408,7 @@ const DriverPanel: React.FC = () => {
                 <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleEditDriver} disabled={!selectedDriver?.name.trim()}>
+                <Button onClick={handleEditDriver} disabled={!selectedDriver?.name.trim() || !user}>
                   Save Changes
                 </Button>
               </div>

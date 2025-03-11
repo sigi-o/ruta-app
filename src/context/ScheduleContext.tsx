@@ -1,16 +1,17 @@
-
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { Driver, DeliveryStop, TimeSlot, ScheduleDay } from '@/types';
 import { generateTimeSlots } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { useDateSystem } from './DateContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './AuthContext';
 
 interface ScheduleContextType {
   scheduleDay: ScheduleDay;
   addDriver: (driver: Omit<Driver, 'id'>) => void;
-  removeDriver: (driverId: string) => void;
-  updateDriver: (driverId: string, updatedDriver: Partial<Driver>) => void;
+  removeDriver: (driverId: string) => Promise<void>;
+  updateDriver: (driverId: string, updatedDriver: Partial<Driver>) => Promise<void>;
   addStop: (stop: Omit<DeliveryStop, 'id' | 'status'>) => void;
   updateStop: (stopId: string, updatedStop: Partial<DeliveryStop>) => void;
   removeStop: (stopId: string) => void;
@@ -24,6 +25,7 @@ interface ScheduleContextType {
   editStop: (stopId: string) => void;
   duplicateStop: (stopId: string) => void;
   getStopsForDate: (date: string) => DeliveryStop[];
+  syncDriversWithDatabase: () => Promise<void>;
 }
 
 // Generate time slots from 2:00 AM to 11:30 PM with 30-minute intervals
@@ -109,6 +111,7 @@ const editStopEventChannel = new EventTarget();
 
 export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentDateString } = useDateSystem();
+  const { user } = useAuth();
   
   const [scheduleDay, setScheduleDay] = useState<ScheduleDay>(defaultScheduleDay);
   const [isLoading, setIsLoading] = useState(false);
@@ -119,6 +122,10 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (!initialLoadComplete.current) {
       loadSavedSchedule();
       initialLoadComplete.current = true;
+      
+      if (user) {
+        fetchDriversFromDatabase();
+      }
     }
     
     const handleEditStopEvent = (e: Event) => {
@@ -136,77 +143,319 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return () => {
       window.removeEventListener('editStop', handleEditStopEvent);
     };
-  }, [scheduleDay.stops]);
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchDriversFromDatabase();
+    }
+  }, [user]);
+
+  const fetchDriversFromDatabase = async () => {
+    if (!user) return;
+    
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('drivers')
+        .select('*')
+        .eq('user_id', user.id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data && data.length > 0) {
+        const drivers: Driver[] = data.map(dbDriver => ({
+          id: dbDriver.id,
+          name: dbDriver.name,
+          color: dbDriver.color,
+          vehicleType: dbDriver.vehicle_type || undefined,
+          phoneNumber: dbDriver.phone_number || undefined,
+          notes: dbDriver.notes || undefined,
+          available: dbDriver.available === null ? true : dbDriver.available,
+        }));
+        
+        setScheduleDay(prev => ({
+          ...prev,
+          drivers: drivers,
+        }));
+        
+        toast({
+          title: "Drivers Loaded",
+          description: `${drivers.length} drivers loaded from database.`,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching drivers:', error);
+      toast({
+        title: "Error Loading Drivers",
+        description: "Failed to load drivers from the database.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const syncDriversWithDatabase = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to sync with the database.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      
+      const { data: dbDrivers, error: fetchError } = await supabase
+        .from('drivers')
+        .select('id')
+        .eq('user_id', user.id);
+      
+      if (fetchError) throw fetchError;
+      
+      const dbDriverIds = new Set((dbDrivers || []).map(d => d.id));
+      const currentDrivers = scheduleDay.drivers;
+      
+      const driversToAdd = currentDrivers.filter(d => !dbDriverIds.has(d.id));
+      const driversToUpdate = currentDrivers.filter(d => dbDriverIds.has(d.id));
+      const driversToDelete = Array.from(dbDriverIds).filter(
+        id => !currentDrivers.some(d => d.id === id)
+      );
+      
+      if (driversToAdd.length > 0) {
+        const { error: insertError } = await supabase
+          .from('drivers')
+          .insert(driversToAdd.map(driver => ({
+            id: driver.id,
+            user_id: user.id,
+            name: driver.name,
+            color: driver.color,
+            vehicle_type: driver.vehicleType || null,
+            phone_number: driver.phoneNumber || null,
+            notes: driver.notes || null,
+            available: driver.available === undefined ? true : driver.available,
+          })));
+        
+        if (insertError) throw insertError;
+      }
+      
+      for (const driver of driversToUpdate) {
+        const { error: updateError } = await supabase
+          .from('drivers')
+          .update({
+            name: driver.name,
+            color: driver.color,
+            vehicle_type: driver.vehicleType || null,
+            phone_number: driver.phoneNumber || null,
+            notes: driver.notes || null,
+            available: driver.available === undefined ? true : driver.available,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', driver.id)
+          .eq('user_id', user.id);
+        
+        if (updateError) throw updateError;
+      }
+      
+      if (driversToDelete.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('drivers')
+          .delete()
+          .in('id', driversToDelete)
+          .eq('user_id', user.id);
+        
+        if (deleteError) throw deleteError;
+      }
+      
+      toast({
+        title: "Sync Complete",
+        description: `Added: ${driversToAdd.length}, Updated: ${driversToUpdate.length}, Deleted: ${driversToDelete.length}`,
+      });
+      
+    } catch (error) {
+      console.error('Error syncing drivers with database:', error);
+      toast({
+        title: "Sync Failed",
+        description: "Failed to synchronize drivers with the database.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const getStopsForDate = (date: string) => {
     return scheduleDay.stops.filter(stop => stop.deliveryDate === date);
   };
 
-  const addDriver = (driver: Omit<Driver, 'id'>) => {
+  const addDriver = async (driver: Omit<Driver, 'id'>) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to add drivers.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newDriverId = `driver-${Date.now()}`;
+    
     const newDriver: Driver = {
       ...driver,
-      id: `driver-${Date.now()}`,
+      id: newDriverId,
       available: driver.available !== undefined ? driver.available : true,
     };
 
-    setScheduleDay(prev => ({
-      ...prev,
-      drivers: [...prev.drivers, newDriver],
-    }));
+    try {
+      const { error } = await supabase
+        .from('drivers')
+        .insert({
+          id: newDriverId,
+          user_id: user.id,
+          name: driver.name,
+          color: driver.color,
+          vehicle_type: driver.vehicleType || null,
+          phone_number: driver.phoneNumber || null,
+          notes: driver.notes || null,
+          available: driver.available === undefined ? true : driver.available,
+        });
 
-    toast({
-      title: "Driver Added",
-      description: `${driver.name} has been added to the schedule.`,
-    });
-  };
+      if (error) throw error;
 
-  const removeDriver = (driverId: string) => {
-    setScheduleDay(prev => {
-      const updatedStops = prev.stops.map(stop => 
-        stop.driverId === driverId ? { ...stop, driverId: undefined, status: 'unassigned' as const } : stop
-      );
-
-      return {
+      setScheduleDay(prev => ({
         ...prev,
-        drivers: prev.drivers.filter(d => d.id !== driverId),
-        stops: updatedStops,
-      };
-    });
+        drivers: [...prev.drivers, newDriver],
+      }));
 
-    toast({
-      title: "Driver Removed",
-      description: "Driver has been removed and their stops unassigned.",
-    });
+      toast({
+        title: "Driver Added",
+        description: `${driver.name} has been added to the schedule.`,
+      });
+    } catch (error) {
+      console.error('Error adding driver to database:', error);
+      toast({
+        title: "Error Adding Driver",
+        description: "Failed to add driver to the database.",
+        variant: "destructive",
+      });
+      throw error;
+    }
   };
 
-  const updateDriver = (driverId: string, updatedDriver: Partial<Driver>) => {
-    setScheduleDay(prev => {
-      let updatedStops = [...prev.stops];
-      
-      if (updatedDriver.available === false) {
-        updatedStops = prev.stops.map(stop => 
+  const removeDriver = async (driverId: string) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to remove drivers.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('drivers')
+        .delete()
+        .eq('id', driverId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setScheduleDay(prev => {
+        const updatedStops = prev.stops.map(stop => 
           stop.driverId === driverId ? { ...stop, driverId: undefined, status: 'unassigned' as const } : stop
         );
+
+        return {
+          ...prev,
+          drivers: prev.drivers.filter(d => d.id !== driverId),
+          stops: updatedStops,
+        };
+      });
+
+      toast({
+        title: "Driver Removed",
+        description: "Driver has been removed and their stops unassigned.",
+      });
+    } catch (error) {
+      console.error('Error removing driver from database:', error);
+      toast({
+        title: "Error Removing Driver",
+        description: "Failed to remove driver from the database.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const updateDriver = async (driverId: string, updatedDriver: Partial<Driver>) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to update drivers.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('drivers')
+        .update({
+          name: updatedDriver.name,
+          color: updatedDriver.color,
+          vehicle_type: updatedDriver.vehicleType || null,
+          phone_number: updatedDriver.phoneNumber || null,
+          notes: updatedDriver.notes || null,
+          available: updatedDriver.available === undefined ? true : updatedDriver.available,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', driverId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setScheduleDay(prev => {
+        let updatedStops = [...prev.stops];
         
-        toast({
-          title: "Driver Marked Unavailable",
-          description: "All stops assigned to this driver have been unassigned.",
-        });
-      }
+        if (updatedDriver.available === false) {
+          updatedStops = prev.stops.map(stop => 
+            stop.driverId === driverId ? { ...stop, driverId: undefined, status: 'unassigned' as const } : stop
+          );
+          
+          toast({
+            title: "Driver Marked Unavailable",
+            description: "All stops assigned to this driver have been unassigned.",
+          });
+        }
 
-      return {
-        ...prev,
-        drivers: prev.drivers.map(driver => 
-          driver.id === driverId ? { ...driver, ...updatedDriver } : driver
-        ),
-        stops: updatedStops,
-      };
-    });
+        return {
+          ...prev,
+          drivers: prev.drivers.map(driver => 
+            driver.id === driverId ? { ...driver, ...updatedDriver } : driver
+          ),
+          stops: updatedStops,
+        };
+      });
 
-    toast({
-      title: "Driver Updated",
-      description: "Driver information has been updated.",
-    });
+      toast({
+        title: "Driver Updated",
+        description: "Driver information has been updated.",
+      });
+    } catch (error) {
+      console.error('Error updating driver in database:', error);
+      toast({
+        title: "Error Updating Driver",
+        description: "Failed to update driver in the database.",
+        variant: "destructive",
+      });
+      throw error;
+    }
   };
 
   const addStop = (stop: Omit<DeliveryStop, 'id' | 'status'>) => {
@@ -488,7 +737,8 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       isLoading,
       editStop,
       duplicateStop,
-      getStopsForDate
+      getStopsForDate,
+      syncDriversWithDatabase
     }}>
       {children}
     </ScheduleContext.Provider>
