@@ -190,11 +190,6 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             !prev.stops.some(existingStop => existingStop.id === stop.id)
           )],
         }));
-        
-        toast({
-          title: "Stops Loaded",
-          description: `${stops.length} stops loaded from database.`,
-        });
       }
     } catch (error) {
       console.error('Error fetching stops:', error);
@@ -237,11 +232,6 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           ...prev,
           drivers: drivers,
         }));
-        
-        toast({
-          title: "Drivers Loaded",
-          description: `${drivers.length} drivers loaded from database.`,
-        });
       }
     } catch (error) {
       console.error('Error fetching drivers:', error);
