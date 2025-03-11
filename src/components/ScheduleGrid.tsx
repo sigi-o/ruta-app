@@ -154,7 +154,7 @@ const ScheduleGrid: React.FC = () => {
     );
   }
 
-  // Make sure we're using ALL time slots from the context
+  // Use all time slots from the context without filtering
   const allTimeSlots = scheduleDay.timeSlots;
   
   return (
