@@ -49,7 +49,7 @@ const ScheduleCSS: React.FC = () => {
       
       .time-row {
         display: flex;
-        min-height: 100px;
+        min-height: 60px;
         width: 100%;
       }
       

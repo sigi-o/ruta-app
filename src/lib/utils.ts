@@ -1,3 +1,4 @@
+
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { TimeSlot } from "@/types";
@@ -6,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function generateTimeSlots(startTime: string, endTime: string, intervalMinutes: number): TimeSlot[] {
+export function generateTimeSlots(startTime: string, endTime: string, intervalMinutes: number = 15): TimeSlot[] {
   const timeSlots: TimeSlot[] = [];
   
   const startHour = parseInt(startTime.split(':')[0]);
@@ -32,7 +33,7 @@ export function generateTimeSlots(startTime: string, endTime: string, intervalMi
     // Format for display (12-hour format with AM/PM)
     const displayHour = currentHour % 12 || 12;
     const amPm = currentHour < 12 ? 'AM' : 'PM';
-    const displayTime = `${displayHour}:${formattedMinute.padStart(2, '0')} ${amPm}`;
+    const displayTime = `${displayHour}:${formattedMinute} ${amPm}`;
     
     timeSlots.push({
       time: timeString,

@@ -37,7 +37,7 @@ export function TimePicker({
         // Format for 12-hour display
         const displayHour = hour % 12 || 12
         const amPm = hour < 12 ? "AM" : "PM"
-        const displayValue = `${displayHour}:${formattedMinute.padStart(2, "0")} ${amPm}`
+        const displayValue = `${displayHour}:${formattedMinute} ${amPm}`
         
         slots.push({
           value: timeValue,
@@ -54,7 +54,7 @@ export function TimePicker({
     const hour = parseInt(hourStr, 10)
     const displayHour = hour % 12 || 12
     const amPm = hour < 12 ? "AM" : "PM"
-    return `${displayHour}:${minuteStr.padStart(2, "0")} ${amPm}`
+    return `${displayHour}:${minuteStr} ${amPm}`
   }
 
   // Handle time selection
