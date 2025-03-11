@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ScheduleProvider } from '@/context/ScheduleContext';
 import { DateProvider, useDateSystem } from '@/context/DateContext';
+import { useAuth } from '@/context/AuthContext';
 import DriverPanel from '@/components/DriverPanel';
 import ScheduleGrid from '@/components/ScheduleGrid';
 import UnassignedStopsPanel from '@/components/UnassignedStopsPanel';
@@ -11,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
-import { CalendarIcon, Upload, Printer, FileCheck } from 'lucide-react';
+import { CalendarIcon, Upload, Printer, FileCheck, LogOut } from 'lucide-react';
 import { useSchedule } from '@/context/ScheduleContext';
 
 const ScheduleManager: React.FC = () => {
@@ -20,6 +21,7 @@ const ScheduleManager: React.FC = () => {
   const [isPrintView, setIsPrintView] = useState(false);
   const { autoAssignStops, saveSchedule, isLoading, scheduleDay } = useSchedule();
   const printTimeoutRef = useRef<number | null>(null);
+  const { signOut, user } = useAuth();
   
   const handlePrint = () => {
     console.log("Print triggered, refreshing print view with current data");
@@ -141,6 +143,14 @@ const ScheduleManager: React.FC = () => {
             onClick={handlePrint}
           >
             <Printer className="h-4 w-4 mr-2" /> Print
+          </Button>
+
+          <Button
+            variant="ghost"
+            className="text-red-600 hover:bg-red-50 hover:text-red-700"
+            onClick={signOut}
+          >
+            <LogOut className="h-4 w-4 mr-2" /> Logout
           </Button>
         </div>
       </header>
