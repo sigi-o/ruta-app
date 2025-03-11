@@ -73,7 +73,7 @@ export const useDragDrop = (currentDateString: string) => {
     const stop = scheduleDay.stops.find(s => s.id === stopId);
     if (!stop) return;
     
-    // Valid time check - ensure the time slot exists
+    // Valid time check - ensure the time slot exists and is in 15-minute increments
     const validTimeSlot = scheduleDay.timeSlots.some(slot => slot.time === timeSlot);
     if (!validTimeSlot) {
       console.error(`Invalid time slot: ${timeSlot}`);
