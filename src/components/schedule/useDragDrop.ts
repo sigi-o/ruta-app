@@ -73,6 +73,18 @@ export const useDragDrop = (currentDateString: string) => {
     const stop = scheduleDay.stops.find(s => s.id === stopId);
     if (!stop) return;
     
+    // Valid time check - ensure the time slot exists
+    const validTimeSlot = scheduleDay.timeSlots.some(slot => slot.time === timeSlot);
+    if (!validTimeSlot) {
+      console.error(`Invalid time slot: ${timeSlot}`);
+      toast({
+        title: "Invalid Time Slot",
+        description: `Cannot assign to time ${timeSlot} as it's not a valid 15-minute time slot.`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (source === 'unassigned') {
       if (stop.deliveryDate !== currentDateString) {
         updateStop(stopId, {
@@ -124,7 +136,7 @@ export const useDragDrop = (currentDateString: string) => {
     }
     
     setDraggingStop(null);
-  }, [scheduleDay.stops, scheduleDay.drivers, currentDateString, assignStop, unassignStop, updateStop, toast]);
+  }, [scheduleDay.stops, scheduleDay.drivers, scheduleDay.timeSlots, currentDateString, assignStop, unassignStop, updateStop, toast]);
 
   return {
     draggingStop,

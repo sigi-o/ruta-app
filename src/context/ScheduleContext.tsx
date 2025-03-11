@@ -893,12 +893,19 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         
         const updatedStops = [...prev.stops];
         
-        Object.keys(stopsByTime).sort().forEach((time, timeIndex) => {
+        const sortedTimeSlots = Object.keys(stopsByTime).sort();
+        
+        const driverLoads: Record<string, number> = {};
+        availableDriverIds.forEach(id => {
+          driverLoads[id] = 0;
+        });
+        
+        sortedTimeSlots.forEach((time) => {
           const stopsForTime = stopsByTime[time];
           
-          stopsForTime.forEach((stop, index) => {
-            const driverIndex = (timeIndex + index) % availableDriverIds.length;
-            const driverId = availableDriverIds[driverIndex];
+          stopsForTime.forEach((stop) => {
+            const driverId = Object.entries(driverLoads)
+              .sort((a, b) => a[1] - b[1])[0][0];
             
             const foundIndex = updatedStops.findIndex(s => s.id === stop.id);
             if (foundIndex !== -1) {
@@ -907,6 +914,8 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 driverId,
                 status: 'assigned' as const
               };
+              
+              driverLoads[driverId]++;
             }
           });
         });
