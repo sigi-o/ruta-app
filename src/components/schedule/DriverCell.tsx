@@ -30,12 +30,9 @@ const DriverCell: React.FC<DriverCellProps> = ({
   onDragEnd,
   onStopClick
 }) => {
-  // Temporarily add debugging to verify each driver cell renders for each time slot
-  console.log(`Rendering driver cell for ${driver.name} at time slot ${timeSlot}`);
-
   return (
     <div
-      className="driver-cell"
+      className="driver-cell min-w-[150px] border-r border-b border-gray-200 h-full"
       data-driver-id={driver.id}
       data-time-slot={timeSlot}
       onDragOver={onDragOver}

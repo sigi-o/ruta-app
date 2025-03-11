@@ -30,16 +30,13 @@ const TimeRow: React.FC<TimeRowProps> = ({
   onDragEnd,
   onStopClick
 }) => {
-  // Debug to ensure this time slot is being rendered
-  console.log(`Rendering time row for slot: ${timeSlot.time} (${timeSlot.label})`);
-  
   return (
-    <div key={timeSlot.time} className="time-row flex" data-time={timeSlot.time}>
-      <div className="time-label sticky left-0 bg-white z-15 min-w-[80px] flex items-center justify-center text-xs font-medium text-gray-500 border-r border-b border-gray-200">
+    <div className="time-row flex h-[100px]" data-time={timeSlot.time}>
+      <div className="time-label sticky left-0 bg-white z-10 min-w-[80px] w-[80px] flex items-center justify-center text-xs font-medium text-gray-500 border-r border-b border-gray-200">
         {timeSlot.label}
       </div>
       
-      <div className="driver-cells flex">
+      <div className="driver-cells flex flex-1">
         {availableDrivers.map(driver => (
           <DriverCell
             key={`${driver.id}-${timeSlot.time}`}
