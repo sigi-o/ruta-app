@@ -135,7 +135,7 @@ const ScheduleManager: React.FC = () => {
             className="text-purple-600 hover:bg-purple-50 hover:text-purple-700"
             onClick={() => saveSchedule()}
           >
-            <FileCheck className="h-4 w-4 mr-2" /> Validate CSV
+            <FileCheck className="h-4 w-4 mr-2" /> Save
           </Button>
           
           <Button

@@ -1,4 +1,3 @@
-
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { TimeSlot } from "@/types";
@@ -21,7 +20,6 @@ export function generateTimeSlots(startTime: string, endTime: string, intervalMi
   let currentHour = startHour;
   let currentMinute = startMinute;
   
-  // Ensure we include the end time in the loop condition
   while (
     currentHour < endHour || 
     (currentHour === endHour && currentMinute <= endMinute)
@@ -34,7 +32,7 @@ export function generateTimeSlots(startTime: string, endTime: string, intervalMi
     // Format for display (12-hour format with AM/PM)
     const displayHour = currentHour % 12 || 12;
     const amPm = currentHour < 12 ? 'AM' : 'PM';
-    const displayTime = `${displayHour}:${formattedMinute} ${amPm}`;
+    const displayTime = `${displayHour}:${formattedMinute.padStart(2, '0')} ${amPm}`;
     
     timeSlots.push({
       time: timeString,

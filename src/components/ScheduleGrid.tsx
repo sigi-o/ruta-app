@@ -31,8 +31,10 @@ const ScheduleGrid: React.FC = () => {
   // For debugging the number of time slots being rendered
   useEffect(() => {
     console.log(`Total time slots available: ${scheduleDay.timeSlots.length}`);
-    console.log(`First time slot: ${scheduleDay.timeSlots[0]?.time} (${scheduleDay.timeSlots[0]?.label})`);
-    console.log(`Last time slot: ${scheduleDay.timeSlots[scheduleDay.timeSlots.length - 1]?.time} (${scheduleDay.timeSlots[scheduleDay.timeSlots.length - 1]?.label})`);
+    if (scheduleDay.timeSlots.length > 0) {
+      console.log(`First time slot: ${scheduleDay.timeSlots[0]?.time} (${scheduleDay.timeSlots[0]?.label})`);
+      console.log(`Last time slot: ${scheduleDay.timeSlots[scheduleDay.timeSlots.length - 1]?.time} (${scheduleDay.timeSlots[scheduleDay.timeSlots.length - 1]?.label})`);
+    }
   }, [scheduleDay.timeSlots]);
 
   const handleStopClick = (stopId: string) => {
