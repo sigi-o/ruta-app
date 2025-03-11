@@ -26,8 +26,8 @@ interface ScheduleContextType {
   getStopsForDate: (date: string) => DeliveryStop[];
 }
 
-// Generate the full 24-hour time slots range
-const defaultTimeSlots = generateTimeSlots('00:00', '23:30', 30);
+// Generate time slots from 2:00 AM to 11:30 PM with 30-minute intervals
+const defaultTimeSlots = generateTimeSlots('02:00', '23:30', 30);
 const today = format(new Date(), 'yyyy-MM-dd');
 
 const defaultDrivers: Driver[] = [
