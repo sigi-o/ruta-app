@@ -18,14 +18,14 @@ export function TimePicker({
   onValueChange,
   className,
   disabled = false,
-  intervalMinutes = 30,
+  intervalMinutes = 15,
   ...props
 }: TimePickerProps) {
   const [isOpen, setIsOpen] = React.useState(false)
   const [currentValue, setCurrentValue] = React.useState(value)
   const containerRef = React.useRef<HTMLDivElement>(null)
 
-  // Generate time slots with the specified interval (default: 30min)
+  // Generate time slots with the specified interval (default: 15min)
   const timeSlots = React.useMemo(() => {
     const slots = []
     for (let hour = 0; hour < 24; hour++) {

@@ -30,7 +30,7 @@ interface ScheduleContextType {
   syncStopsWithDatabase: () => Promise<void>;
 }
 
-const defaultTimeSlots = generateTimeSlots('02:00', '23:30', 30);
+const defaultTimeSlots = generateTimeSlots('02:00', '23:30', 15);
 const today = format(new Date(), 'yyyy-MM-dd');
 
 const defaultDrivers: Driver[] = [
