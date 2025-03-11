@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSchedule, editStopEventChannel } from '@/context/ScheduleContext';
 import { useDateSystem } from '@/context/DateContext';
@@ -8,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { MapPin, Clock, Package, AlertCircle, Plus, Edit, Trash2, ShoppingBag, Shuffle, Phone, GripHorizontal, Copy, Calendar, Save } from 'lucide-react';
+import { MapPin, Clock, Package, AlertCircle, Plus, Edit, Trash2, ShoppingBag, Shuffle, Phone, GripHorizontal, Copy, Calendar } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -16,7 +17,7 @@ import { TimePicker } from '@/components/ui/time-picker';
 import { useAuth } from '@/context/AuthContext';
 
 const UnassignedStopsPanel: React.FC = () => {
-  const { scheduleDay, addStop, updateStop, removeStop, autoAssignStops, isLoading, editStop, duplicateStop, syncStopsWithDatabase } = useSchedule();
+  const { scheduleDay, addStop, updateStop, removeStop, autoAssignStops, isLoading, editStop, duplicateStop, getStopsForDate } = useSchedule();
   const { currentDateString } = useDateSystem();
   const { user } = useAuth();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -175,18 +176,6 @@ const UnassignedStopsPanel: React.FC = () => {
     <div className="h-full flex flex-col">
       <div className="p-3 header-gradient rounded-t-lg flex justify-between items-center">
         <h2 className="text-lg font-medium">Unassigned Stops</h2>
-        {user && (
-          <Button 
-            size="sm"
-            variant="outline" 
-            className="bg-white/80 hover:bg-white"
-            onClick={syncStopsWithDatabase}
-            disabled={isLoading}
-          >
-            <Save className="h-3.5 w-3.5 mr-1.5" />
-            {isLoading ? 'Syncing...' : 'Sync to Database'}
-          </Button>
-        )}
       </div>
       
       <div className="border-b border-blue-100 p-2 bg-blue-50/30">
