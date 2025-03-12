@@ -52,7 +52,32 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
     return null;
   };
   
-  // Helper function to clean strings from CSV (remove quotes)
+  // Improved CSV parsing function to handle quoted fields
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let insideQuotes = false;
+    let currentValue = '';
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      
+      if (char === '"') {
+        insideQuotes = !insideQuotes;
+      } else if (char === ',' && !insideQuotes) {
+        result.push(currentValue);
+        currentValue = '';
+      } else {
+        currentValue += char;
+      }
+    }
+    
+    // Add the last value
+    result.push(currentValue);
+    
+    return result;
+  };
+  
+  // Helper function to clean strings from CSV (remove quotes and trim)
   const cleanString = (str: string): string => {
     if (!str) return '';
     // Remove surrounding quotes and trim whitespace
@@ -92,11 +117,50 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
         return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
       }
       
-      return '12:00'; // Default if parsing fails
+      // Additional handling for "11:30" format without am/pm
+      if (cleanTimeStr.match(/^\d{1,2}:\d{2}$/)) {
+        return cleanTimeStr.padStart(5, '0');
+      }
+      
+      // Just numbers without separators (e.g. "1130")
+      if (cleanTimeStr.match(/^\d{3,4}$/)) {
+        let hours = parseInt(cleanTimeStr.substring(0, cleanTimeStr.length - 2));
+        const minutes = parseInt(cleanTimeStr.substring(cleanTimeStr.length - 2));
+        if (hours > 12) hours = 12;
+        if (minutes > 59) minutes = 0;
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      }
+      
+      console.warn("Could not parse time format:", timeStr);
+      return '12:00'; // Default time
     } catch (error) {
       console.error("Time parsing error:", error, "for input:", timeStr);
       return '12:00'; // Default time
     }
+  };
+
+  // Helper to extract address components and handle suite numbers
+  const processAddressAndPhone = (address: string, phone: string): { address: string, phone: string } => {
+    // If phone looks like a suite number, append it to address
+    if (phone && phone.toLowerCase().includes('suite') || phone.toLowerCase().includes('unit') || 
+        phone.match(/^#\d+/) || phone.match(/^\d+[a-z]?$/i)) {
+      return {
+        address: `${address}${address ? ', ' : ''}${phone}`,
+        phone: ''
+      };
+    }
+    
+    // Clean up phone number to only include digits, parentheses, hyphens and spaces
+    let cleanedPhone = '';
+    if (phone) {
+      cleanedPhone = phone.replace(/[^\d\s\(\)\-\+\.]/g, '').trim();
+      // If the cleaned value is too short, it's probably not a phone number
+      if (cleanedPhone.replace(/[^\d]/g, '').length < 7) {
+        cleanedPhone = '';
+      }
+    }
+    
+    return { address, phone: cleanedPhone };
   };
 
   const parseDispatchReport = (csvText: string): ParseResult => {
@@ -112,6 +176,8 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
       result.reportDate = extractReportDate(lines[0]);
       if (!result.reportDate) {
         console.warn("Could not extract report date from header:", lines[0]);
+        // Use today's date as fallback
+        result.reportDate = format(new Date(), 'yyyy-MM-dd');
       }
     }
     
@@ -121,13 +187,12 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
       if (!line) continue;
       
       try {
-        // Split the CSV line into columns
-        // This is a simple split - a more robust CSV parser would handle quotes etc.
-        const columns = line.split(',');
+        // Parse the CSV line more robustly to handle quoted fields
+        const columns = parseCSVLine(line);
         
         // Check if we have enough columns
         if (columns.length < 14) {
-          result.errors.push({ row: i + 1, message: "Insufficient columns" });
+          result.errors.push({ row: i + 1, message: `Insufficient columns (found ${columns.length}, need at least 14)` });
           continue;
         }
         
@@ -135,12 +200,16 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
         const deliveryTime = convertTimeFormat(columns[1] || ''); // Column B
         const clientName = cleanString(columns[5] || '');   // Column F
         const businessName = cleanString(columns[6] || ''); // Column G
-        const address = cleanString(columns[10] || '');     // Column K
-        const contactPhone = cleanString(columns[11] || ''); // Column L
+        const rawAddress = cleanString(columns[10] || '');  // Column K
+        const rawContactPhone = cleanString(columns[11] || ''); // Column L
         const specialInstructions = cleanString(columns[13] || ''); // Column N
+        
+        // Process address and phone intelligently
+        const { address, phone } = processAddressAndPhone(rawAddress, rawContactPhone);
         
         // Skip rows without critical data
         if (!businessName && !address) {
+          result.errors.push({ row: i + 1, message: "Missing critical data (business name and address both empty)" });
           continue;
         }
         
@@ -150,15 +219,15 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
           clientName: clientName || '',
           address: address || 'No Address Provided',
           deliveryTime: deliveryTime,
-          deliveryDate: result.reportDate || format(new Date(), 'yyyy-MM-dd'),
-          contactPhone: contactPhone || '',
+          deliveryDate: result.reportDate,
+          contactPhone: phone || '',
           specialInstructions: specialInstructions || '',
           stopType: 'delivery' as const
         };
         
         result.data.push(deliveryData);
       } catch (error) {
-        console.error(`Error parsing row ${i + 1}:`, error);
+        console.error(`Error parsing row ${i + 1}:`, error, "Line:", lines[i]);
         result.errors.push({ row: i + 1, message: `Failed to parse row: ${error}` });
       }
     }
