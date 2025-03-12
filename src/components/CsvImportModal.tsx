@@ -104,7 +104,7 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
       
       if (match) {
         let hours = parseInt(match[1]);
-        const minutes = match[2] ? parseInt(match[2]) : 0;
+        let mins = match[2] ? parseInt(match[2]) : 0; // Changed from const to let
         const period = match[3]?.toLowerCase();
         
         // Convert to 24-hour format
@@ -114,7 +114,7 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
           hours = 0;
         }
         
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
       }
       
       // Additional handling for "11:30" format without am/pm
@@ -125,9 +125,9 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
       // Just numbers without separators (e.g. "1130")
       if (cleanTimeStr.match(/^\d{3,4}$/)) {
         let hours = parseInt(cleanTimeStr.substring(0, cleanTimeStr.length - 2));
-        const minutes = parseInt(cleanTimeStr.substring(cleanTimeStr.length - 2));
+        let minutes = parseInt(cleanTimeStr.substring(cleanTimeStr.length - 2)); // Changed from const to let
         if (hours > 12) hours = 12;
-        if (minutes > 59) minutes = 0;
+        if (minutes > 59) minutes = 0; // This is the line that was causing the error
         return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
       }
       
