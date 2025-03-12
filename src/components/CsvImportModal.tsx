@@ -51,6 +51,53 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
     }
     return null;
   };
+  
+  // Helper function to clean strings from CSV (remove quotes)
+  const cleanString = (str: string): string => {
+    if (!str) return '';
+    // Remove surrounding quotes and trim whitespace
+    return str.replace(/^["']|["']$/g, '').trim();
+  };
+  
+  // Helper function to convert time format from "11:30 am" to "11:30"
+  const convertTimeFormat = (timeStr: string): string => {
+    if (!timeStr) return '12:00'; // Default time
+    
+    try {
+      // Clean the string first
+      const cleanTimeStr = cleanString(timeStr);
+      
+      // Parse using date-fns (handle "11:30 am" format)
+      const parsedTime = parse(cleanTimeStr, 'hh:mm a', new Date());
+      if (!isNaN(parsedTime.getTime())) {
+        return format(parsedTime, 'HH:mm');
+      }
+      
+      // If simple parsing failed, try more manual approach
+      const timeRegex = /(\d{1,2}):?(\d{2})?\s*(am|pm)?/i;
+      const match = cleanTimeStr.match(timeRegex);
+      
+      if (match) {
+        let hours = parseInt(match[1]);
+        const minutes = match[2] ? parseInt(match[2]) : 0;
+        const period = match[3]?.toLowerCase();
+        
+        // Convert to 24-hour format
+        if (period === 'pm' && hours < 12) {
+          hours += 12;
+        } else if (period === 'am' && hours === 12) {
+          hours = 0;
+        }
+        
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      }
+      
+      return '12:00'; // Default if parsing fails
+    } catch (error) {
+      console.error("Time parsing error:", error, "for input:", timeStr);
+      return '12:00'; // Default time
+    }
+  };
 
   const parseDispatchReport = (csvText: string): ParseResult => {
     const lines = csvText.split('\n');
@@ -63,6 +110,9 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
     // Try to extract report date from the first line
     if (lines.length > 0) {
       result.reportDate = extractReportDate(lines[0]);
+      if (!result.reportDate) {
+        console.warn("Could not extract report date from header:", lines[0]);
+      }
     }
     
     // Skip the header rows (1-3)
@@ -73,7 +123,7 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
       try {
         // Split the CSV line into columns
         // This is a simple split - a more robust CSV parser would handle quotes etc.
-        const columns = line.split(',').map(col => col.trim());
+        const columns = line.split(',');
         
         // Check if we have enough columns
         if (columns.length < 14) {
@@ -82,12 +132,12 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
         }
         
         // Map columns to our data model
-        const deliveryTime = columns[1] || ''; // Column B
-        const clientName = columns[5] || '';   // Column F
-        const businessName = columns[6] || ''; // Column G
-        const address = columns[10] || '';     // Column K
-        const contactPhone = columns[11] || ''; // Column L
-        const specialInstructions = columns[13] || ''; // Column N
+        const deliveryTime = convertTimeFormat(columns[1] || ''); // Column B
+        const clientName = cleanString(columns[5] || '');   // Column F
+        const businessName = cleanString(columns[6] || ''); // Column G
+        const address = cleanString(columns[10] || '');     // Column K
+        const contactPhone = cleanString(columns[11] || ''); // Column L
+        const specialInstructions = cleanString(columns[13] || ''); // Column N
         
         // Skip rows without critical data
         if (!businessName && !address) {
@@ -99,7 +149,7 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
           businessName: businessName || 'Unknown Business',
           clientName: clientName || '',
           address: address || 'No Address Provided',
-          deliveryTime: deliveryTime || '12:00',
+          deliveryTime: deliveryTime,
           deliveryDate: result.reportDate || format(new Date(), 'yyyy-MM-dd'),
           contactPhone: contactPhone || '',
           specialInstructions: specialInstructions || '',
@@ -109,7 +159,7 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
         result.data.push(deliveryData);
       } catch (error) {
         console.error(`Error parsing row ${i + 1}:`, error);
-        result.errors.push({ row: i + 1, message: "Failed to parse row" });
+        result.errors.push({ row: i + 1, message: `Failed to parse row: ${error}` });
       }
     }
     
@@ -131,6 +181,7 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
         setIsVerified(result.data.length > 0);
         
         if (result.data.length > 0) {
+          console.log("Sample parsed data:", result.data[0]);
           toast({
             title: "CSV Verified",
             description: `${result.data.length} deliveries found in the dispatch report${
@@ -174,6 +225,10 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
     if (!parseResult || !isVerified) return;
     
     importCsvData(parseResult.data);
+    toast({
+      title: "Import Successful",
+      description: `${parseResult.data.length} deliveries have been imported to your schedule.`,
+    });
     onClose();
     setFile(null);
     setParseResult(null);
