@@ -1056,45 +1056,18 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const newStops: DeliveryStop[] = data.map((row) => {
         const newStopId = uuidv4();
         
-        const businessName = row.businessName || row.business_name || row.company || 'Unknown Business';
-        const address = row.address || row.delivery_address || row.location || 'No Address Provided';
-        let deliveryTime = row.deliveryTime || row.delivery_time || row.time || '12:00';
-        if (!deliveryTime.match(/^\d{1,2}:\d{2}$/)) {
-          try {
-            const [hours, minutes] = deliveryTime.split(':').map(Number);
-            deliveryTime = `${String(hours).padStart(2, '0')}:${String(minutes || 0).padStart(2, '0')}`;
-          } catch (error) {
-            console.warn(`Invalid time format: ${deliveryTime}, using default`);
-            deliveryTime = '12:00';
-          }
-        }
-        
-        let deliveryDate = row.deliveryDate || row.delivery_date || row.date || currentDateString;
-        if (!deliveryDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
-          try {
-            const date = new Date(deliveryDate);
-            if (!isNaN(date.getTime())) {
-              deliveryDate = format(date, 'yyyy-MM-dd');
-            } else {
-              deliveryDate = currentDateString;
-            }
-          } catch (error) {
-            console.warn(`Invalid date format: ${deliveryDate}, using current date`);
-            deliveryDate = currentDateString;
-          }
-        }
-        
         return {
           id: newStopId,
-          businessName,
+          businessName: row.businessName || row.business_name || row.company || '',
           clientName: row.clientName || row.customer_name || row.client || '',
-          address,
-          deliveryTime,
-          deliveryDate,
+          address: row.address || row.delivery_address || row.location || '',
+          deliveryTime: row.deliveryTime || row.delivery_time || row.time || '12:00',
+          deliveryDate: row.deliveryDate || row.delivery_date || row.date || currentDateString,
           status: 'unassigned' as const,
           orderNumber: row.orderNumber || row.order_number || row.order_id || '',
           contactPhone: row.contactPhone || row.phone || row.contact || '',
           specialInstructions: row.specialInstructions || row.instructions || row.notes || '',
+          items: row.items ? (typeof row.items === 'string' ? [row.items] : row.items) : [],
           stopType: 'delivery' as const
         };
       });
@@ -1115,43 +1088,21 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         stop_type: stop.stopType,
       }));
       
-      const batchSize = 50;
-      let successCount = 0;
-      let errorCount = 0;
+      const { error } = await supabase
+        .from('delivery_stops')
+        .insert(dbStops);
       
-      for (let i = 0; i < dbStops.length; i += batchSize) {
-        const batch = dbStops.slice(i, i + batchSize);
-        
-        const { error, data } = await supabase
-          .from('delivery_stops')
-          .insert(batch)
-          .select();
-        
-        if (error) {
-          console.error('Error batch inserting stops:', error);
-          errorCount += batch.length;
-        } else {
-          successCount += data?.length || 0;
-        }
-      }
+      if (error) throw error;
       
       setScheduleDay(prev => ({
         ...prev,
         stops: [...prev.stops, ...newStops],
       }));
       
-      if (errorCount > 0) {
-        toast({
-          title: "Partial Import Completed",
-          description: `${successCount} stops imported successfully. ${errorCount} stops failed to save to the database.`,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "CSV Import Complete",
-          description: `${newStops.length} stops have been imported and saved to the database.`,
-        });
-      }
+      toast({
+        title: "CSV Import Complete",
+        description: `${newStops.length} stops have been imported and saved to the database.`,
+      });
     } catch (error) {
       console.error('Error importing CSV data:', error);
       toast({
@@ -1273,3 +1224,4 @@ export const useSchedule = () => {
 };
 
 export { editStopEventChannel };
+
