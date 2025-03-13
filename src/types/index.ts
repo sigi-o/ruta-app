@@ -47,3 +47,27 @@ export interface ImportedCsvData {
   items?: string[];
   specialInstructions?: string;
 }
+
+export interface ParsedCsvData {
+  reportDate: string | null;
+  deliveries: Record<string, string>[];
+  totalRows: number;
+  successfulRows: number;
+  errors: CsvParseError[];
+  warnings: CsvParseWarning[];
+}
+
+export interface CsvParseError {
+  row: number;
+  message: string;
+  field?: string;
+  originalValue?: string;
+}
+
+export interface CsvParseWarning {
+  row: number;
+  message: string;
+  field?: string;
+  originalValue?: string;
+  correctedValue?: string;
+}
