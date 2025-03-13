@@ -44,7 +44,6 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
         
         setCsvData(parsedData);
         
-        // Verification successful if we have at least one delivery
         setIsVerified(parsedData.deliveries.length > 0);
         
         if (parsedData.errors.length > 0) {
@@ -66,7 +65,6 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
           });
         }
         
-        // Automatically switch to preview tab if we have data
         if (parsedData.deliveries.length > 0) {
           setActiveTab("preview");
         } else if (parsedData.errors.length > 0) {
@@ -114,7 +112,6 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
   const renderDataPreview = () => {
     if (!csvData || csvData.deliveries.length === 0) return null;
     
-    // Show first 3 records as a preview
     const previewRecords = csvData.deliveries.slice(0, 3);
     
     return (
@@ -156,6 +153,23 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
     );
   };
 
+  const renderColumnMappingInfo = () => {
+    return (
+      <div className="mt-2 text-xs bg-blue-50 p-2 rounded">
+        <p className="font-semibold mb-1">Expected Column Structure:</p>
+        <ul className="list-disc pl-4 space-y-1">
+          <li><span className="font-medium">Row 1, Column A:</span> Report Date</li>
+          <li><span className="font-medium">Column B:</span> Delivery Time</li>
+          <li><span className="font-medium">Column F:</span> Client Name</li>
+          <li><span className="font-medium">Column G:</span> Business Name (required)</li>
+          <li><span className="font-medium">Column K:</span> Address (required)</li>
+          <li><span className="font-medium">Column L:</span> Phone Number</li>
+          <li><span className="font-medium">Column N:</span> Notes</li>
+        </ul>
+      </div>
+    );
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-lg">
@@ -163,11 +177,7 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
           <DialogTitle className="text-blue-600">Import Dispatch Report</DialogTitle>
           <DialogDescription>
             Upload a dispatch report CSV file with delivery information to import into the schedule.
-            {csvData?.columnMap && Object.keys(csvData.columnMap).length > 0 && (
-              <div className="mt-2 text-xs bg-blue-50 p-2 rounded">
-                <span className="font-semibold">Column headers detected:</span> {Object.keys(csvData.columnMap).join(', ')}
-              </div>
-            )}
+            {renderColumnMappingInfo()}
           </DialogDescription>
         </DialogHeader>
 
@@ -317,8 +327,8 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
         <div className="mt-2 text-xs bg-blue-50 p-2 rounded flex items-start">
           <HelpCircle className="h-4 w-4 text-blue-500 mr-2 mt-0.5 shrink-0" />
           <span>
-            For best results, make sure your CSV has these columns: Business Name, Client Name, Address, 
-            Phone, Delivery Time, and Notes. The parser will attempt to detect these automatically.
+            Your CSV must follow the expected structure with information in specific columns.
+            Business Name (Column G), Address (Column K), and Delivery Time (Column B) are required.
           </span>
         </div>
 

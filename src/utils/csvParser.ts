@@ -33,6 +33,7 @@ export function parseDispatchCsv(fileContent: string): ParsedCsvData {
   const warnings: CsvParseWarning[] = [];
   
   // Fixed column mapping as per requirements
+  // Using zero-based indexing for array access
   const columnMap = {
     deliveryTime: 1,  // Column B
     clientName: 5,    // Column F
@@ -55,22 +56,31 @@ export function parseDispatchCsv(fileContent: string): ParsedCsvData {
       // Parse the CSV line handling quoted values properly
       const values = parseCSVLine(line);
       
-      if (values.length < 14) { // Ensure we have enough columns
+      // Check if we have enough columns for the essential fields
+      // We need at least enough columns to reach the highest index we're interested in
+      const requiredColumnCount = Math.max(
+        columnMap.businessName, 
+        columnMap.address, 
+        columnMap.deliveryTime
+      ) + 1;
+      
+      if (values.length < requiredColumnCount) {
         errors.push({
           row: lineNumber,
-          message: `Not enough columns. Found ${values.length}, expected at least 14.`
+          message: `Not enough columns for essential data. Found ${values.length}, need at least ${requiredColumnCount} to reach all required fields.`
         });
         continue;
       }
       
       // Extract data using fixed column positions
+      // Use optional chaining to prevent errors if columns are missing
       const businessName = cleanString(values[columnMap.businessName] || '');
-      const clientName = cleanString(values[columnMap.clientName] || '');
-      const address = cleanString(values[columnMap.address] || '');
-      const phone = cleanString(values[columnMap.phone] || '');
-      const deliveryTime = cleanString(values[columnMap.deliveryTime] || '');
-      const notes = cleanString(values[columnMap.notes] || '');
-      const orderNumber = cleanString(values[columnMap.orderNumber] || '');
+      const clientName = values.length > columnMap.clientName ? cleanString(values[columnMap.clientName] || '') : '';
+      const address = values.length > columnMap.address ? cleanString(values[columnMap.address] || '') : '';
+      const phone = values.length > columnMap.phone ? cleanString(values[columnMap.phone] || '') : '';
+      const deliveryTime = values.length > columnMap.deliveryTime ? cleanString(values[columnMap.deliveryTime] || '') : '';
+      const notes = values.length > columnMap.notes ? cleanString(values[columnMap.notes] || '') : '';
+      const orderNumber = values.length > columnMap.orderNumber ? cleanString(values[columnMap.orderNumber] || '') : '';
       
       // Validate required fields
       const missingFields: string[] = [];
