@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { DeliveryStop } from '@/types';
-import { MapPin, Clock, AlertCircle, Package, ShoppingBag, GripHorizontal, Calendar } from 'lucide-react';
+import { MapPin, Clock, AlertCircle, Package, ShoppingBag, GripHorizontal, Calendar, Phone } from 'lucide-react';
 
 interface StopItemProps {
   stop: DeliveryStop;
@@ -73,6 +73,13 @@ const StopItem: React.FC<StopItemProps> = ({
         <MapPin className="h-3 w-3 mr-1" />
         {stop.address}
       </div>
+      
+      {stop.contactPhone && (
+        <div className="flex items-center text-xs text-gray-500 mt-1">
+          <Phone className="h-3 w-3 mr-1" />
+          {stop.contactPhone}
+        </div>
+      )}
 
       <div className="flex items-center text-xs text-gray-500 mt-1">
         <Calendar className="h-3 w-3 mr-1" />

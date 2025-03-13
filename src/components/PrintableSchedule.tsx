@@ -49,6 +49,15 @@ const PrintableSchedule: React.FC<PrintableScheduleProps> = ({
   } catch (error) {
     formattedDate = "Schedule Date";
   }
+  
+  // Format time to 12-hour format
+  const formatTo12Hour = (time24: string): string => {
+    const [hourStr, minuteStr] = time24.split(':');
+    const hour = parseInt(hourStr, 10);
+    const displayHour = hour % 12 || 12;
+    const amPm = hour < 12 ? 'AM' : 'PM';
+    return `${displayHour}:${minuteStr} ${amPm}`;
+  };
 
   return (
     <div className="print-container p-2 max-w-full">
@@ -72,7 +81,7 @@ const PrintableSchedule: React.FC<PrintableScheduleProps> = ({
                   <div className="stop-header flex justify-between items-center border-b border-gray-200 pb-1 mb-1">
                     <h3 className="font-semibold text-blue-700">{stop.businessName || stop.clientName}</h3>
                     <div className="stop-time font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">
-                      {stop.deliveryTime}
+                      {formatTo12Hour(stop.deliveryTime)}
                     </div>
                   </div>
                   
@@ -82,9 +91,6 @@ const PrintableSchedule: React.FC<PrintableScheduleProps> = ({
                     </div>
                     
                     <div className="grid grid-cols-1 text-xs">
-                      {stop.orderNumber && (
-                        <div><strong className="text-gray-700">Order #:</strong> {stop.orderNumber}</div>
-                      )}
                       {stop.clientName && stop.businessName && (
                         <div><strong className="text-gray-700">Contact:</strong> {stop.clientName}</div>
                       )}
