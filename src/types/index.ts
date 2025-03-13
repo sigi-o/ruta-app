@@ -55,6 +55,7 @@ export interface ParsedCsvData {
   successfulRows: number;
   errors: CsvParseError[];
   warnings: CsvParseWarning[];
+  columnMap?: Record<string, number>;
 }
 
 export interface CsvParseError {
@@ -70,4 +71,11 @@ export interface CsvParseWarning {
   field?: string;
   originalValue?: string;
   correctedValue?: string;
+}
+
+export interface CsvColumn {
+  index: number;
+  name: string;
+  required: boolean;
+  alternateNames: string[];
 }

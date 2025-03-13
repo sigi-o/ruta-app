@@ -2,11 +2,12 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { UploadCloud, AlertCircle, CheckCircle2, FileCheck, Info } from "lucide-react";
+import { UploadCloud, AlertCircle, CheckCircle2, FileCheck, Info, HelpCircle } from "lucide-react";
 import { useSchedule } from '@/context/ScheduleContext';
 import { useToast } from '@/hooks/use-toast';
 import { parseDispatchCsv } from '@/utils/csvParser';
 import { ParsedCsvData } from '@/types';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface CsvImportModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
   const [csvData, setCsvData] = useState<ParsedCsvData | null>(null);
   const [isVerified, setIsVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("preview");
   const { importCsvData } = useSchedule();
   const { toast } = useToast();
 
@@ -64,6 +66,14 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
             description: `${parsedData.deliveries.length} records found in the CSV file.`,
           });
         }
+        
+        // Automatically switch to preview tab if we have data
+        if (parsedData.deliveries.length > 0) {
+          setActiveTab("preview");
+        } else if (parsedData.errors.length > 0) {
+          setActiveTab("errors");
+        }
+        
       } catch (error) {
         console.error("Error parsing CSV", error);
         toast({
@@ -105,13 +115,58 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
     setIsVerified(false);
   };
 
+  const renderDataPreview = () => {
+    if (!csvData || csvData.deliveries.length === 0) return null;
+    
+    // Show first 3 records as a preview
+    const previewRecords = csvData.deliveries.slice(0, 3);
+    
+    return (
+      <div className="mt-2 text-xs">
+        <div className="font-semibold mb-1">Data Preview (first 3 records):</div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full border border-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="p-2 border">Business</th>
+                <th className="p-2 border">Address</th>
+                <th className="p-2 border">Time</th>
+                <th className="p-2 border">Client</th>
+              </tr>
+            </thead>
+            <tbody>
+              {previewRecords.map((record, index) => (
+                <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <td className="p-2 border">{record.businessName}</td>
+                  <td className="p-2 border">{record.address}</td>
+                  <td className="p-2 border">{record.deliveryTime}</td>
+                  <td className="p-2 border">{record.clientName}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {csvData.deliveries.length > 3 && (
+          <div className="mt-1 text-right text-gray-500">
+            ...and {csvData.deliveries.length - 3} more records
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-blue-600">Import Dispatch Report</DialogTitle>
           <DialogDescription>
             Upload a dispatch report CSV file with delivery information to import into the schedule.
+            {csvData?.columnMap && Object.keys(csvData.columnMap).length > 0 && (
+              <div className="mt-2 text-xs bg-blue-50 p-2 rounded">
+                <span className="font-semibold">Column headers detected:</span> {Object.keys(csvData.columnMap).join(', ')}
+              </div>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -156,18 +211,22 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
                       <span className="font-medium">Report Date:</span> {csvData.reportDate}
                     </div>
                   )}
-                  {csvData.warnings.length > 0 && (
-                    <div className="mt-1 text-amber-500">
-                      <Info className="h-3 w-3 inline mr-1" />
-                      {csvData.warnings.length} warning{csvData.warnings.length > 1 ? 's' : ''} found
-                    </div>
-                  )}
-                  {csvData.errors.length > 0 && (
-                    <div className="mt-1 text-red-500">
-                      <AlertCircle className="h-3 w-3 inline mr-1" />
-                      {csvData.errors.length} error{csvData.errors.length > 1 ? 's' : ''} found
-                    </div>
-                  )}
+                  
+                  <div className="flex space-x-4 mt-1">
+                    {csvData.warnings.length > 0 && (
+                      <div className="text-amber-500">
+                        <Info className="h-3 w-3 inline mr-1" />
+                        {csvData.warnings.length} warning{csvData.warnings.length > 1 ? 's' : ''}
+                      </div>
+                    )}
+                    
+                    {csvData.errors.length > 0 && (
+                      <div className="text-red-500">
+                        <AlertCircle className="h-3 w-3 inline mr-1" />
+                        {csvData.errors.length} error{csvData.errors.length > 1 ? 's' : ''}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -184,45 +243,82 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
             </Button>
           )}
           
-          {csvData && csvData.errors.length > 0 && (
-            <div className="max-h-32 overflow-y-auto text-xs p-2 border border-red-200 rounded bg-red-50">
-              <p className="font-medium text-red-600 mb-1">Errors:</p>
-              <ul className="list-disc pl-4">
-                {csvData.errors.slice(0, 5).map((error, index) => (
-                  <li key={index} className="text-red-600">
-                    Row {error.row}: {error.message} 
-                    {error.field ? ` (Field: ${error.field})` : ''}
-                    {error.originalValue ? ` Original: "${error.originalValue}"` : ''}
-                  </li>
-                ))}
-                {csvData.errors.length > 5 && (
-                  <li className="text-red-600 font-medium">
-                    ...and {csvData.errors.length - 5} more errors
-                  </li>
+          {csvData && (
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="preview">
+                  Data Preview
+                </TabsTrigger>
+                <TabsTrigger value="errors" disabled={csvData.errors.length === 0}>
+                  Errors ({csvData.errors.length})
+                </TabsTrigger>
+                <TabsTrigger value="warnings" disabled={csvData.warnings.length === 0}>
+                  Warnings ({csvData.warnings.length})
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="preview" className="p-1">
+                {renderDataPreview()}
+                
+                {csvData.deliveries.length === 0 && (
+                  <div className="p-4 text-center text-red-600 bg-red-50 rounded border border-red-100">
+                    <AlertCircle className="w-5 h-5 mx-auto mb-2" />
+                    No valid data records found. Check the Errors tab for details.
+                  </div>
                 )}
-              </ul>
-            </div>
-          )}
-          
-          {csvData && csvData.warnings.length > 0 && (
-            <div className="max-h-32 overflow-y-auto text-xs p-2 border border-amber-200 rounded bg-amber-50">
-              <p className="font-medium text-amber-600 mb-1">Warnings:</p>
-              <ul className="list-disc pl-4">
-                {csvData.warnings.slice(0, 5).map((warning, index) => (
-                  <li key={index} className="text-amber-600">
-                    Row {warning.row}: {warning.message}
-                    {warning.field ? ` (Field: ${warning.field})` : ''}
-                    {warning.correctedValue ? ` Corrected to: "${warning.correctedValue}"` : ''}
-                  </li>
-                ))}
-                {csvData.warnings.length > 5 && (
-                  <li className="text-amber-600 font-medium">
-                    ...and {csvData.warnings.length - 5} more warnings
-                  </li>
+              </TabsContent>
+              
+              <TabsContent value="errors">
+                {csvData.errors.length > 0 ? (
+                  <div className="max-h-40 overflow-y-auto text-xs p-2 border border-red-200 rounded bg-red-50">
+                    <ul className="list-disc pl-4">
+                      {csvData.errors.map((error, index) => (
+                        <li key={index} className="text-red-600 mb-1">
+                          Row {error.row}: {error.message} 
+                          {error.field ? ` (Field: ${error.field})` : ''}
+                          {error.originalValue ? ` Original: "${error.originalValue}"` : ''}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-green-600 bg-green-50 rounded">
+                    <CheckCircle2 className="w-5 h-5 mx-auto mb-2" />
+                    No errors found
+                  </div>
                 )}
-              </ul>
-            </div>
+              </TabsContent>
+              
+              <TabsContent value="warnings">
+                {csvData.warnings.length > 0 ? (
+                  <div className="max-h-40 overflow-y-auto text-xs p-2 border border-amber-200 rounded bg-amber-50">
+                    <ul className="list-disc pl-4">
+                      {csvData.warnings.map((warning, index) => (
+                        <li key={index} className="text-amber-600 mb-1">
+                          Row {warning.row}: {warning.message}
+                          {warning.field ? ` (Field: ${warning.field})` : ''}
+                          {warning.correctedValue ? ` Corrected to: "${warning.correctedValue}"` : ''}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-green-600 bg-green-50 rounded">
+                    <CheckCircle2 className="w-5 h-5 mx-auto mb-2" />
+                    No warnings found
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           )}
+        </div>
+
+        <div className="mt-2 text-xs bg-blue-50 p-2 rounded flex items-start">
+          <HelpCircle className="h-4 w-4 text-blue-500 mr-2 mt-0.5 shrink-0" />
+          <span>
+            For best results, make sure your CSV has these columns: Business Name, Client Name, Address, 
+            Phone, Delivery Time, and Notes. The parser will attempt to detect these automatically.
+          </span>
         </div>
 
         <DialogFooter className="sm:justify-between flex-col sm:flex-row gap-3">
