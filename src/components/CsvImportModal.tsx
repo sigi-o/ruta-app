@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -102,12 +101,9 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
   const handleImport = () => {
     if (!csvData || !isVerified || csvData.deliveries.length === 0) return;
     
-    importCsvData(csvData.deliveries);
+    console.log(`Importing ${csvData.deliveries.length} deliveries with date ${csvData.reportDate}`);
     
-    toast({
-      title: "Import Successful",
-      description: `${csvData.deliveries.length} deliveries have been imported for ${csvData.reportDate}.`,
-    });
+    importCsvData(csvData.deliveries);
     
     onClose();
     setFile(null);
@@ -124,6 +120,11 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
     return (
       <div className="mt-2 text-xs">
         <div className="font-semibold mb-1">Data Preview (first 3 records):</div>
+        {csvData.reportDate && (
+          <div className="text-sm text-blue-600 font-medium mb-2">
+            Report Date: {csvData.reportDate}
+          </div>
+        )}
         <div className="overflow-x-auto">
           <table className="min-w-full border border-gray-200">
             <thead className="bg-gray-50">

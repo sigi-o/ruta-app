@@ -1053,24 +1053,34 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setIsLoading(true);
     
     try {
+      // Make sure we have data to import
+      if (!data || data.length === 0) {
+        throw new Error("No valid data to import");
+      }
+      
+      console.log(`Preparing to import ${data.length} deliveries:`, data[0]);
+      
       const newStops: DeliveryStop[] = data.map((row) => {
         const newStopId = uuidv4();
         
+        // Use exact field names from the CSV parser
         return {
           id: newStopId,
-          businessName: row.businessName || row.business_name || row.company || '',
-          clientName: row.clientName || row.customer_name || row.client || '',
-          address: row.address || row.delivery_address || row.location || '',
-          deliveryTime: row.deliveryTime || row.delivery_time || row.time || '12:00',
-          deliveryDate: row.deliveryDate || row.delivery_date || row.date || currentDateString,
+          businessName: row.businessName || '',
+          clientName: row.clientName || '',
+          address: row.address || '',
+          deliveryTime: row.deliveryTime || '12:00',
+          deliveryDate: row.deliveryDate || currentDateString,
           status: 'unassigned' as const,
-          orderNumber: row.orderNumber || row.order_number || row.order_id || '',
-          contactPhone: row.contactPhone || row.phone || row.contact || '',
-          specialInstructions: row.specialInstructions || row.instructions || row.notes || '',
+          orderNumber: row.orderNumber || '',
+          contactPhone: row.contactPhone || '',
+          specialInstructions: row.specialInstructions || '',
           items: row.items ? (typeof row.items === 'string' ? [row.items] : row.items) : [],
           stopType: 'delivery' as const
         };
       });
+      
+      console.log(`Mapped ${newStops.length} stops for database insert`);
       
       const dbStops = newStops.map(stop => ({
         id: stop.id,
@@ -1088,26 +1098,47 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         stop_type: stop.stopType,
       }));
       
-      const { error } = await supabase
+      console.log(`Inserting ${dbStops.length} stops into database`);
+      
+      const { data: responseData, error } = await supabase
         .from('delivery_stops')
-        .insert(dbStops);
+        .insert(dbStops)
+        .select();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase insert error:", error);
+        throw error;
+      }
       
+      console.log(`Successfully inserted ${responseData?.length || 0} stops`);
+      
+      // Update local state with the new stops
       setScheduleDay(prev => ({
         ...prev,
         stops: [...prev.stops, ...newStops],
       }));
       
-      toast({
-        title: "CSV Import Complete",
-        description: `${newStops.length} stops have been imported and saved to the database.`,
-      });
+      // Determine if we need to show a warning about the date
+      const importedDate = newStops[0]?.deliveryDate;
+      const isDateDifferent = importedDate && importedDate !== currentDateString;
+      
+      if (isDateDifferent) {
+        toast({
+          title: "Import Successful - Different Date",
+          description: `${newStops.length} stops were imported for ${importedDate}. You are currently viewing ${currentDateString}.`,
+          variant: "warning",
+        });
+      } else {
+        toast({
+          title: "CSV Import Complete",
+          description: `${newStops.length} stops have been imported and saved to the database.`,
+        });
+      }
     } catch (error) {
       console.error('Error importing CSV data:', error);
       toast({
         title: "Import Failed",
-        description: "Failed to import CSV data. Please check the format and try again.",
+        description: `Failed to import CSV data: ${(error as Error).message}`,
         variant: "destructive",
       });
     } finally {
@@ -1224,4 +1255,3 @@ export const useSchedule = () => {
 };
 
 export { editStopEventChannel };
-
