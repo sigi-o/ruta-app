@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { TimePicker } from '@/components/ui/time-picker';
 import { useAuth } from '@/context/AuthContext';
+import { formatTo12Hour } from '@/lib/utils';
 
 const UnassignedStopsPanel: React.FC = () => {
   const { scheduleDay, addStop, updateStop, removeStop, autoAssignStops, isLoading, editStop, duplicateStop, getStopsForDate } = useSchedule();
@@ -278,7 +279,7 @@ const UnassignedStopsPanel: React.FC = () => {
                 <div className="flex justify-between items-center mt-3">
                   <div className="flex items-center text-xs font-medium">
                     <Clock className="h-3.5 w-3.5 text-gray-500 mr-1" />
-                    {stop.deliveryTime}
+                    {formatTo12Hour(stop.deliveryTime)}
                   </div>
                   
                   <div className="flex items-center">
