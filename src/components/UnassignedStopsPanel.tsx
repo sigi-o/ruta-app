@@ -177,7 +177,12 @@ const UnassignedStopsPanel: React.FC = () => {
   return (
     <div className="h-full flex flex-col">
       <div className="p-3 header-gradient rounded-t-lg flex justify-between items-center">
-        <h2 className="text-lg font-medium">Unassigned Stops</h2>
+        <div className="flex items-center">
+          <h2 className="text-lg font-medium">Unassigned Stops</h2>
+          <div className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+            {unassignedStops.length}
+          </div>
+        </div>
       </div>
       
       <div className="border-b border-blue-100 p-2 bg-blue-50/30">
