@@ -42,6 +42,9 @@ const StopItem: React.FC<StopItemProps> = ({
     }
   };
 
+  // Format the delivery time in 12-hour format for display
+  const formattedTime = formatTo12Hour(stop.deliveryTime);
+
   return (
     <div
       className={`delivery-item cursor-pointer ${draggingStop === stop.id ? 'opacity-50' : ''} ${
@@ -58,7 +61,7 @@ const StopItem: React.FC<StopItemProps> = ({
         <div className="flex items-center text-xs gap-1">
           <div className="text-gray-500">
             <Clock className="h-3 w-3 inline mr-1" />
-            {formatTo12Hour(stop.deliveryTime)}
+            {formattedTime}
           </div>
           <div 
             className="h-6 w-6 flex items-center justify-center text-gray-400 cursor-grab"

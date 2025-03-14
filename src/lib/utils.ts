@@ -1,4 +1,3 @@
-
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { TimeSlot } from "@/types";
@@ -87,4 +86,14 @@ export const formatDate = (date: Date): string => {
 
 export const printSchedule = (): void => {
   window.print();
+};
+
+export const formatTo12Hour = (time24: string): string => {
+  if (!time24 || !time24.includes(':')) return time24;
+  
+  const [hourStr, minuteStr] = time24.split(':');
+  const hour = parseInt(hourStr, 10);
+  const displayHour = hour % 12 || 12;
+  const amPm = hour < 12 ? 'AM' : 'PM';
+  return `${displayHour}:${minuteStr} ${amPm}`;
 };
