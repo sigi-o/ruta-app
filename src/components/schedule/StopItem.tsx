@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DeliveryStop } from '@/types';
 import { MapPin, Clock, AlertCircle, Package, ShoppingBag, GripHorizontal, Calendar, Phone } from 'lucide-react';
@@ -42,8 +41,9 @@ const StopItem: React.FC<StopItemProps> = ({
     }
   };
 
-  // Format the delivery time in 12-hour format for display
   const formattedTime = formatTo12Hour(stop.deliveryTime);
+
+  const displayName = stop.businessName || stop.clientName || "Unnamed Stop";
 
   return (
     <div
@@ -57,7 +57,7 @@ const StopItem: React.FC<StopItemProps> = ({
       onClick={onClick}
     >
       <div className="flex justify-between items-start">
-        <div className="font-medium text-gray-800">{stop.businessName || stop.clientName}</div>
+        <div className="font-medium text-gray-800">{displayName}</div>
         <div className="flex items-center text-xs gap-1">
           <div className="text-gray-500">
             <Clock className="h-3 w-3 inline mr-1" />

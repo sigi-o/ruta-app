@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DeliveryStop } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
@@ -42,7 +41,7 @@ const StopFormModal: React.FC<StopFormModalProps> = ({
   onTimeChange
 }) => {
   const submitButtonText = isEdit ? 'Update Stop' : 'Add Stop';
-  const isFormValid = stop?.businessName && stop?.address && 
+  const isFormValid = stop?.address && 
                       stop?.deliveryTime && stop?.stopType && stop?.deliveryDate;
 
   return (
@@ -57,14 +56,13 @@ const StopFormModal: React.FC<StopFormModalProps> = ({
         {stop && (
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="businessName">Business Name <span className="text-red-500">*</span></Label>
+              <Label htmlFor="businessName">Business Name</Label>
               <Input
                 id="businessName"
                 name="businessName"
                 placeholder="Enter business name"
                 value={stop.businessName || ''}
                 onChange={onInputChange}
-                required
               />
             </div>
             
