@@ -2,6 +2,7 @@
 import React from 'react';
 import { DeliveryStop, Driver } from '@/types';
 import { format } from 'date-fns';
+import { Package, ShoppingBag, AlertCircle } from 'lucide-react';
 
 interface PrintableScheduleProps {
   drivers: Driver[];
@@ -58,6 +59,19 @@ const PrintableSchedule: React.FC<PrintableScheduleProps> = ({
     const amPm = hour < 12 ? 'AM' : 'PM';
     return `${displayHour}:${minuteStr} ${amPm}`;
   };
+  
+  // Get the appropriate icon for the stop type
+  const getStopTypeIcon = (stopType: string) => {
+    switch (stopType) {
+      case 'delivery':
+        return <Package className="h-3 w-3 inline mr-1" />;
+      case 'pickup':
+        return <ShoppingBag className="h-3 w-3 inline mr-1" />;
+      case 'other':
+      default:
+        return <AlertCircle className="h-3 w-3 inline mr-1" />;
+    }
+  };
 
   return (
     <div className="print-container p-2 max-w-full">
@@ -97,9 +111,12 @@ const PrintableSchedule: React.FC<PrintableScheduleProps> = ({
                       {stop.contactPhone && (
                         <div><strong className="text-gray-700">Phone:</strong> {stop.contactPhone}</div>
                       )}
-                      {stop.stopType && stop.stopType !== 'delivery' && (
-                        <div><strong className="text-gray-700">Type:</strong> {stop.stopType}</div>
-                      )}
+                      <div className="text-xs mt-1">
+                        <strong className="text-gray-700">Type:</strong> 
+                        <span className="capitalize ml-1">
+                          {getStopTypeIcon(stop.stopType)} {stop.stopType}
+                        </span>
+                      </div>
                       {stop.specialInstructions && (
                         <div><strong className="text-gray-700">Instructions:</strong> {stop.specialInstructions}</div>
                       )}
