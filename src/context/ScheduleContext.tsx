@@ -175,6 +175,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     try {
       setIsLoading(true);
+      console.log('Fetching stops from database for user:', user.id);
       const { data, error } = await supabase
         .from('delivery_stops')
         .select('*')
@@ -185,6 +186,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
       
       if (data && data.length > 0) {
+        console.log(`Found ${data.length} stops in database`);
         const stops: DeliveryStop[] = data.map(dbStop => ({
           id: dbStop.id,
           businessName: dbStop.business_name,
@@ -204,6 +206,8 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           ...prev,
           stops: stops,
         }));
+      } else {
+        console.log('No stops found in database, using default empty array');
       }
     } catch (error) {
       console.error('Error fetching stops:', error);
@@ -222,6 +226,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     try {
       setIsLoading(true);
+      console.log('Fetching drivers from database for user:', user.id);
       const { data, error } = await supabase
         .from('drivers')
         .select('*')
@@ -232,6 +237,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
       
       if (data && data.length > 0) {
+        console.log(`Found ${data.length} drivers in database`);
         const drivers: Driver[] = data.map(dbDriver => ({
           id: dbDriver.id,
           name: dbDriver.name,
@@ -246,6 +252,8 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           ...prev,
           drivers: drivers,
         }));
+      } else {
+        console.log('No drivers found in database, using default empty array');
       }
     } catch (error) {
       console.error('Error fetching drivers:', error);
@@ -699,6 +707,8 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return;
     }
 
+    console.log(`Updating stop ${stopId} with data:`, updatedStop);
+    
     setScheduleDay(prev => {
       const originalStop = prev.stops.find(s => s.id === stopId);
       const isDateChanging = updatedStop.deliveryDate && originalStop?.deliveryDate !== updatedStop.deliveryDate;
@@ -740,13 +750,19 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       updatedFields.updated_at = new Date().toISOString();
 
+      console.log(`Updating stop in database: ${stopId} with fields:`, updatedFields);
       const { error } = await supabase
         .from('delivery_stops')
         .update(updatedFields)
         .eq('id', stopId)
         .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error when updating stop:', error);
+        throw error;
+      } else {
+        console.log('Successfully updated stop in database');
+      }
     } catch (error) {
       console.error('Error updating stop in database:', error);
       toast({
@@ -820,6 +836,8 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return;
     }
 
+    console.log(`Assigning stop ${stopId} to driver ${driverId}`);
+    
     setScheduleDay(prev => ({
       ...prev,
       stops: prev.stops.map(stop => 
@@ -834,6 +852,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }));
 
     try {
+      console.log(`Updating stop in database: ${stopId}, driver_id: ${driverId}, status: assigned`);
       const { error } = await supabase
         .from('delivery_stops')
         .update({
@@ -844,7 +863,12 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .eq('id', stopId)
         .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error when assigning stop:', error);
+        throw error;
+      } else {
+        console.log('Successfully updated stop in database');
+      }
     } catch (error) {
       console.error('Error assigning stop in database:', error);
       toast({
@@ -865,6 +889,8 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return;
     }
 
+    console.log(`Unassigning stop ${stopId}`);
+    
     setScheduleDay(prev => ({
       ...prev,
       stops: prev.stops.map(stop => 
@@ -879,6 +905,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }));
 
     try {
+      console.log(`Updating stop in database: ${stopId}, driver_id: null, status: unassigned`);
       const { error } = await supabase
         .from('delivery_stops')
         .update({
@@ -889,7 +916,12 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .eq('id', stopId)
         .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error when unassigning stop:', error);
+        throw error;
+      } else {
+        console.log('Successfully unassigned stop in database');
+      }
     } catch (error) {
       console.error('Error unassigning stop in database:', error);
       toast({

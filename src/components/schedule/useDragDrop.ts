@@ -87,6 +87,8 @@ export const useDragDrop = (currentDateString: string) => {
     
     if (source === 'unassigned') {
       if (stop.deliveryDate !== currentDateString) {
+        // If the date is different, update the date, time, and assign to driver
+        console.log(`Updating stop date from ${stop.deliveryDate} to ${currentDateString}`);
         updateStop(stopId, {
           deliveryDate: currentDateString,
           deliveryTime: timeSlot,
@@ -99,6 +101,8 @@ export const useDragDrop = (currentDateString: string) => {
           description: `${stop.businessName} date changed from ${stop.deliveryDate} to ${currentDateString}`,
         });
       } else {
+        // If the date is the same, just assign to driver and update time
+        console.log(`Assigning stop ${stopId} to driver ${driverId} at time ${timeSlot}`);
         assignStop(stopId, driverId);
         updateStop(stopId, { 
           deliveryTime: timeSlot,
@@ -113,11 +117,17 @@ export const useDragDrop = (currentDateString: string) => {
     } 
     else if (source === 'schedule') {
       if (stop.driverId !== driverId || stop.deliveryTime !== timeSlot) {
+        console.log(`Reassigning/moving stop ${stopId}`);
+        
         if (stop.driverId !== driverId) {
+          // If driver changed, reassign
+          console.log(`Changing driver from ${stop.driverId} to ${driverId}`);
           assignStop(stopId, driverId);
         }
         
         if (stop.deliveryTime !== timeSlot) {
+          // If time changed, update time
+          console.log(`Changing time from ${stop.deliveryTime} to ${timeSlot}`);
           updateStop(stopId, { 
             deliveryTime: timeSlot
           });
