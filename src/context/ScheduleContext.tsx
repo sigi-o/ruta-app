@@ -982,6 +982,9 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           driverLoads[id] = 0;
         });
         
+        // Track which stops need to be updated in the database
+        const stopsToUpdate: { id: string, driverId: string }[] = [];
+        
         sortedTimeSlots.forEach((time) => {
           const stopsForTime = stopsByTime[time];
           
@@ -997,44 +1000,63 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 status: 'assigned' as const
               };
               
+              // Add to list of stops to update in database
+              stopsToUpdate.push({ id: stop.id, driverId });
+              
               driverLoads[driverId]++;
             }
           });
         });
+        
+        // After updating local state, immediately update database
+        setTimeout(() => {
+          console.log(`Auto-assigned ${stopsToUpdate.length} stops, updating database...`);
+          
+          // Use Promise.all to update all stops in parallel
+          Promise.all(stopsToUpdate.map(({ id, driverId }) => {
+            console.log(`Updating stop ${id} in database: driver_id=${driverId}, status=assigned`);
+            return supabase
+              .from('delivery_stops')
+              .update({
+                driver_id: driverId,
+                status: 'assigned',
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', id)
+              .eq('user_id', user.id)
+              .then(({ error }) => {
+                if (error) {
+                  console.error(`Error updating stop ${id}:`, error);
+                  throw error;
+                } else {
+                  console.log(`Successfully updated stop ${id} in database`);
+                }
+              });
+          }))
+          .then(() => {
+            toast({
+              title: "Auto-Assignment Complete",
+              description: `${stopsToUpdate.length} stops have been assigned and saved to the database.`,
+            });
+          })
+          .catch((error) => {
+            console.error('Error during batch update:', error);
+            toast({
+              title: "Database Update Partially Failed",
+              description: "Some stops may not have been updated in the database.",
+              variant: "destructive",
+            });
+          })
+          .finally(() => {
+            setIsLoading(false);
+          });
+        }, 0);
         
         return {
           ...prev,
           stops: updatedStops
         };
       });
-      
-      setIsLoading(false);
-      
-      scheduleDay.stops.forEach(async (stop) => {
-        if (stop.status === 'assigned' && stop.driverId) {
-          try {
-            await supabase
-              .from('delivery_stops')
-              .update({
-                driver_id: stop.driverId,
-                status: 'assigned',
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', stop.id)
-              .eq('user_id', user.id);
-          } catch (error) {
-            console.error('Error updating stop assignment in database:', error);
-          }
-        }
-      });
-      
-      setTimeout(() => {
-        toast({
-          title: "Auto-Assignment Complete",
-          description: "Stops have been automatically assigned to available drivers based on delivery times.",
-        });
-      }, 0);
-      
     }, 800);
   };
 
