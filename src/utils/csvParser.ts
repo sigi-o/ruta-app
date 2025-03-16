@@ -1,4 +1,3 @@
-
 import { format } from 'date-fns';
 import { ParsedCsvData, CsvParseError, CsvParseWarning } from '@/types';
 
@@ -59,7 +58,6 @@ export function parseDispatchCsv(fileContent: string): ParsedCsvData {
       // Check if we have enough columns for the essential fields
       // We need at least enough columns to reach the highest index we're interested in
       const requiredColumnCount = Math.max(
-        columnMap.businessName, 
         columnMap.address, 
         columnMap.deliveryTime
       ) + 1;
@@ -74,7 +72,7 @@ export function parseDispatchCsv(fileContent: string): ParsedCsvData {
       
       // Extract data using fixed column positions
       // Use optional chaining to prevent errors if columns are missing
-      const businessName = cleanString(values[columnMap.businessName] || '');
+      const businessName = values.length > columnMap.businessName ? cleanString(values[columnMap.businessName] || '') : '';
       const clientName = values.length > columnMap.clientName ? cleanString(values[columnMap.clientName] || '') : '';
       const address = values.length > columnMap.address ? cleanString(values[columnMap.address] || '') : '';
       const phone = values.length > columnMap.phone ? cleanString(values[columnMap.phone] || '') : '';
@@ -85,10 +83,7 @@ export function parseDispatchCsv(fileContent: string): ParsedCsvData {
       // Validate required fields
       const missingFields: string[] = [];
       
-      if (!businessName) {
-        missingFields.push('business name');
-      }
-      
+      // Remove businessName from required fields check
       if (!address) {
         missingFields.push('address');
       }
@@ -104,8 +99,7 @@ export function parseDispatchCsv(fileContent: string): ParsedCsvData {
         });
         
         // Skip rows with missing required fields
-        if (missingFields.includes('business name') || 
-            missingFields.includes('address') || 
+        if (missingFields.includes('address') || 
             missingFields.includes('delivery time')) {
           continue;
         }
