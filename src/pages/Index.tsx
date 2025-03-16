@@ -12,14 +12,14 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
-import { CalendarIcon, Upload, Printer, FileCheck, LogOut } from 'lucide-react';
+import { CalendarIcon, Upload, Printer, LogOut } from 'lucide-react';
 import { useSchedule } from '@/context/ScheduleContext';
 
 const ScheduleManager: React.FC = () => {
   const { currentDate, currentDateString, setCurrentDate, isDateValid } = useDateSystem();
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isPrintView, setIsPrintView] = useState(false);
-  const { autoAssignStops, saveSchedule, isLoading, scheduleDay } = useSchedule();
+  const { autoAssignStops, isLoading, scheduleDay } = useSchedule();
   const printTimeoutRef = useRef<number | null>(null);
   const { signOut, user } = useAuth();
   
@@ -128,14 +128,6 @@ const ScheduleManager: React.FC = () => {
             onClick={() => setIsImportModalOpen(true)}
           >
             <Upload className="h-4 w-4 mr-2" /> Import CSV
-          </Button>
-          
-          <Button
-            variant="ghost"
-            className="text-purple-600 hover:bg-purple-50 hover:text-purple-700"
-            onClick={() => saveSchedule()}
-          >
-            <FileCheck className="h-4 w-4 mr-2" /> Save
           </Button>
           
           <Button
