@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { UploadCloud, AlertCircle, CheckCircle2, FileCheck, Info, HelpCircle } from "lucide-react";
+import { UploadCloud, AlertCircle, CheckCircle2, FileCheck } from "lucide-react";
 import { useSchedule } from '@/context/ScheduleContext';
 import { useToast } from '@/hooks/use-toast';
 import { parseDispatchCsv } from '@/utils/csvParser';
@@ -143,23 +143,6 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
     );
   };
 
-  const renderColumnMappingInfo = () => {
-    return (
-      <div className="mt-2 text-xs bg-blue-50 p-2 rounded">
-        <p className="font-semibold mb-1">Expected Column Structure:</p>
-        <ul className="list-disc pl-4 space-y-1">
-          <li><span className="font-medium">Row 1, Column A:</span> Report Date</li>
-          <li><span className="font-medium">Column B:</span> Delivery Time</li>
-          <li><span className="font-medium">Column F:</span> Client Name</li>
-          <li><span className="font-medium">Column G:</span> Business Name (required)</li>
-          <li><span className="font-medium">Column K:</span> Address (required)</li>
-          <li><span className="font-medium">Column L:</span> Phone Number</li>
-          <li><span className="font-medium">Column N:</span> Notes</li>
-        </ul>
-      </div>
-    );
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-lg">
@@ -167,7 +150,6 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
           <DialogTitle className="text-blue-600">Import Dispatch Report</DialogTitle>
           <DialogDescription>
             Upload a dispatch report CSV file with delivery information to import into the schedule.
-            {renderColumnMappingInfo()}
           </DialogDescription>
         </DialogHeader>
 
@@ -289,14 +271,6 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
               </TabsContent>
             </Tabs>
           )}
-        </div>
-
-        <div className="mt-2 text-xs bg-blue-50 p-2 rounded flex items-start">
-          <HelpCircle className="h-4 w-4 text-blue-500 mr-2 mt-0.5 shrink-0" />
-          <span>
-            Your CSV must follow the expected structure with information in specific columns.
-            Business Name (Column G), Address (Column K), and Delivery Time (Column B) are required.
-          </span>
         </div>
 
         <DialogFooter className="sm:justify-between flex-col sm:flex-row gap-3">
