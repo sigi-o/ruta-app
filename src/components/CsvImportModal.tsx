@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -47,21 +46,6 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
         
         if (parsedData.deliveries.length > 0) {
           setIsVerified(true);
-          
-          // Only show warnings if we actually found deliveries
-          if (parsedData.warnings.length > 0) {
-            toast({
-              title: "CSV Verified with Warnings",
-              description: `${parsedData.deliveries.length} records found, with ${parsedData.warnings.length} warnings.`,
-              variant: "warning",
-            });
-          } else {
-            toast({
-              title: "CSV Verified Successfully",
-              description: `${parsedData.deliveries.length} records found in the CSV file.`,
-            });
-          }
-          
           setActiveTab("preview");
         } else {
           // Only show error if no deliveries were found
@@ -275,13 +259,6 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
               
               <TabsContent value="preview" className="p-1">
                 {renderDataPreview()}
-                
-                {csvData.deliveries.length === 0 && (
-                  <div className="p-4 text-center text-red-600 bg-red-50 rounded border border-red-100">
-                    <AlertCircle className="w-5 h-5 mx-auto mb-2" />
-                    No valid data records found. Check the Errors tab for details.
-                  </div>
-                )}
               </TabsContent>
               
               <TabsContent value="errors">
