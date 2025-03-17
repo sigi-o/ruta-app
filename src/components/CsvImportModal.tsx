@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -211,22 +212,6 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
                       <span className="font-medium">Report Date:</span> {csvData.reportDate}
                     </div>
                   )}
-                  
-                  <div className="flex space-x-4 mt-1">
-                    {csvData.warnings.length > 0 && (
-                      <div className="text-amber-500">
-                        <Info className="h-3 w-3 inline mr-1" />
-                        {csvData.warnings.length} warning{csvData.warnings.length > 1 ? 's' : ''}
-                      </div>
-                    )}
-                    
-                    {csvData.errors.length > 0 && (
-                      <div className="text-red-500">
-                        <AlertCircle className="h-3 w-3 inline mr-1" />
-                        {csvData.errors.length} error{csvData.errors.length > 1 ? 's' : ''}
-                      </div>
-                    )}
-                  </div>
                 </div>
               )}
             </div>
