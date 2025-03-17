@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -44,38 +45,42 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
         
         setCsvData(parsedData);
         
-        setIsVerified(parsedData.deliveries.length > 0);
-        
-        if (parsedData.errors.length > 0) {
-          toast({
-            title: `CSV Verification ${parsedData.deliveries.length > 0 ? 'Warning' : 'Error'}`,
-            description: `${parsedData.deliveries.length} records found, with ${parsedData.errors.length} errors.`,
-            variant: parsedData.deliveries.length > 0 ? "warning" : "destructive",
-          });
-        } else if (parsedData.warnings.length > 0) {
-          toast({
-            title: "CSV Verified with Warnings",
-            description: `${parsedData.deliveries.length} records found, with ${parsedData.warnings.length} warnings.`,
-            variant: "warning",
-          });
-        } else {
-          toast({
-            title: "CSV Verified Successfully",
-            description: `${parsedData.deliveries.length} records found in the CSV file.`,
-          });
-        }
-        
         if (parsedData.deliveries.length > 0) {
+          setIsVerified(true);
+          
+          // Only show warnings if we actually found deliveries
+          if (parsedData.warnings.length > 0) {
+            toast({
+              title: "CSV Verified with Warnings",
+              description: `${parsedData.deliveries.length} records found, with ${parsedData.warnings.length} warnings.`,
+              variant: "warning",
+            });
+          } else {
+            toast({
+              title: "CSV Verified Successfully",
+              description: `${parsedData.deliveries.length} records found in the CSV file.`,
+            });
+          }
+          
           setActiveTab("preview");
-        } else if (parsedData.errors.length > 0) {
-          setActiveTab("errors");
+        } else {
+          // Only show error if no deliveries were found
+          toast({
+            title: "CSV Import Error",
+            description: "There was an error in your file, stops could not be uploaded.",
+            variant: "destructive",
+          });
+          
+          if (parsedData.errors.length > 0) {
+            setActiveTab("errors");
+          }
         }
         
       } catch (error) {
         console.error("Error parsing CSV", error);
         toast({
-          title: "CSV Parse Error",
-          description: (error as Error).message || "The file could not be parsed. Please check the format.",
+          title: "CSV Import Error",
+          description: "There was an error in your file, stops could not be uploaded.",
           variant: "destructive",
         });
         setCsvData(null);
@@ -86,8 +91,8 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
     
     reader.onerror = () => {
       toast({
-        title: "File Read Error",
-        description: "There was an error reading the file.",
+        title: "CSV Import Error",
+        description: "There was an error in your file, stops could not be uploaded.",
         variant: "destructive",
       });
       setIsLoading(false);
