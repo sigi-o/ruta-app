@@ -4,7 +4,7 @@ import { Driver } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trash2, Plus, User, Phone, UserX, PaintBucket, UserCheck, Pencil, Save, RefreshCcw } from 'lucide-react';
+import { Trash2, Plus, User, Phone, UserX, PaintBucket, UserCheck, Pencil, Save } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
@@ -165,16 +165,6 @@ const DriverPanel: React.FC = () => {
     <div className="h-full flex flex-col">
       <div className="p-4 header-gradient rounded-t-lg flex justify-between items-center">
         <h2 className="text-lg font-medium">Drivers</h2>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={handleSyncDrivers} 
-          disabled={isSyncing || !user}
-          className="h-8 w-8"
-          title="Sync with database"
-        >
-          <RefreshCcw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-        </Button>
       </div>
       
       <div className="p-4 flex-grow overflow-y-auto">
