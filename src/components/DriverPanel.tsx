@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { Driver } from '@/types';
@@ -46,7 +45,6 @@ const DriverPanel: React.FC = () => {
   });
 
   useEffect(() => {
-    // Check if all drivers are available to set the toggle state
     if (scheduleDay.drivers.length > 0) {
       const allAvailable = scheduleDay.drivers.every(driver => driver.available !== false);
       setAllDriversAvailable(allAvailable);
@@ -185,11 +183,9 @@ const DriverPanel: React.FC = () => {
     const newAvailabilityState = !allDriversAvailable;
     setAllDriversAvailable(newAvailabilityState);
     
-    // Update all drivers with the new availability state
     try {
       setIsSyncing(true);
       
-      // Update each driver in the context (which will update the UI)
       const updatePromises = scheduleDay.drivers.map(driver => 
         updateDriver(driver.id, { ...driver, available: newAvailabilityState })
       );
@@ -368,7 +364,6 @@ const DriverPanel: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Edit Driver Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
           setIsEditDialogOpen(open);
           if (!open) setSelectedDriver(null);
@@ -461,7 +456,10 @@ const DriverPanel: React.FC = () => {
               </Button>
               <div className="space-x-2">
                 <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                  Close
+                  Cancel
+                </Button>
+                <Button onClick={handleEditDriver} disabled={!selectedDriver?.name.trim() || !user}>
+                  Save Changes
                 </Button>
               </div>
             </DialogFooter>
