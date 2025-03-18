@@ -51,7 +51,19 @@ const DriverPanel: React.FC = () => {
     if (!selectedDriver) return;
     
     const { name, value } = e.target;
-    setSelectedDriver(prev => prev ? { ...prev, [name]: value } : null);
+    setSelectedDriver(prev => {
+      if (!prev) return null;
+      const updatedDriver = { ...prev, [name]: value };
+      updateDriver(updatedDriver.id, updatedDriver).catch(error => {
+        console.error('Error auto-saving driver:', error);
+        toast({
+          title: "Error",
+          description: "Failed to save driver changes. Please try again.",
+          variant: "destructive",
+        });
+      });
+      return updatedDriver;
+    });
   };
 
   const handleColorSelect = (color: string) => {
@@ -59,7 +71,19 @@ const DriverPanel: React.FC = () => {
   };
 
   const handleEditColorSelect = (color: string) => {
-    setSelectedDriver(prev => prev ? { ...prev, color } : null);
+    setSelectedDriver(prev => {
+      if (!prev) return null;
+      const updatedDriver = { ...prev, color };
+      updateDriver(updatedDriver.id, updatedDriver).catch(error => {
+        console.error('Error auto-saving driver color:', error);
+        toast({
+          title: "Error",
+          description: "Failed to save driver color. Please try again.",
+          variant: "destructive",
+        });
+      });
+      return updatedDriver;
+    });
   };
 
   const handleAddDriver = async () => {
@@ -128,6 +152,14 @@ const DriverPanel: React.FC = () => {
         ...selectedDriver, 
         available: !selectedDriver.available 
       };
+      updateDriver(updatedDriver.id, updatedDriver).catch(error => {
+        console.error('Error auto-saving driver availability:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update driver availability. Please try again.",
+          variant: "destructive",
+        });
+      });
       setSelectedDriver(updatedDriver);
     }
   };
@@ -313,7 +345,6 @@ const DriverPanel: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Edit Driver Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
           setIsEditDialogOpen(open);
           if (!open) setSelectedDriver(null);
@@ -404,14 +435,9 @@ const DriverPanel: React.FC = () => {
               >
                 <Trash2 className="h-4 w-4 mr-2" /> Delete
               </Button>
-              <div className="space-x-2">
-                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleEditDriver} disabled={!selectedDriver?.name.trim() || !user}>
-                  Save Changes
-                </Button>
-              </div>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Close
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
