@@ -14,7 +14,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { format } from 'date-fns';
 import { CalendarIcon, Upload, Printer, LogOut } from 'lucide-react';
 import { useSchedule } from '@/context/ScheduleContext';
-import { ResizablePanelGroup, ResizablePanel } from '@/components/ui/resizable';
 
 const ScheduleManager: React.FC = () => {
   const { currentDate, currentDateString, setCurrentDate, isDateValid } = useDateSystem();
@@ -23,7 +22,6 @@ const ScheduleManager: React.FC = () => {
   const { autoAssignStops, isLoading, scheduleDay } = useSchedule();
   const printTimeoutRef = useRef<number | null>(null);
   const { signOut, user } = useAuth();
-  const [isDriverPanelOpen, setIsDriverPanelOpen] = useState(true);
   
   const handlePrint = () => {
     console.log("Print triggered, refreshing print view with current data");
@@ -150,11 +148,11 @@ const ScheduleManager: React.FC = () => {
       </header>
 
       <div className="flex-grow flex p-4 gap-4 overflow-hidden print:overflow-visible">
-        <div className={`${isDriverPanelOpen ? 'w-1/5' : 'w-auto'} transition-all duration-300 bg-white rounded-lg shadow-sm overflow-hidden print:hidden flex-shrink-0`}>
-          <DriverPanel onToggleCollapse={setIsDriverPanelOpen} />
+        <div className="w-1/5 bg-white rounded-lg shadow-sm overflow-hidden print:hidden">
+          <DriverPanel />
         </div>
         
-        <div className={`${isDriverPanelOpen ? 'w-3/5' : 'flex-1'} transition-all duration-300 bg-white rounded-lg shadow-sm overflow-hidden`}>
+        <div className="w-3/5 bg-white rounded-lg shadow-sm overflow-hidden">
           <ScheduleGrid />
         </div>
         
