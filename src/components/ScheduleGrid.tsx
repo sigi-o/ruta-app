@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { useDateSystem } from '@/context/DateContext';
 import { format } from 'date-fns';
@@ -20,6 +19,7 @@ const ScheduleGrid: React.FC = () => {
   const [hasScrolledToSixAM, setHasScrolledToSixAM] = useState(false);
   const { toast } = useToast();
   const scheduleBodyRef = useRef<HTMLDivElement>(null);
+  const initialRenderRef = useRef(true);
 
   const {
     draggingStop,
@@ -39,35 +39,86 @@ const ScheduleGrid: React.FC = () => {
     }
   }, [scheduleDay.timeSlots]);
   
-  // Scroll to 6AM when the component loads - improved implementation
+  // Improved scroll to 6AM implementation with multiple safeguards
   useEffect(() => {
-    // Only proceed if we haven't scrolled yet and have data
-    if (!hasScrolledToSixAM && scheduleBodyRef.current && scheduleDay.timeSlots.length > 0) {
+    // Only attempt to scroll if:
+    // 1. We haven't scrolled yet
+    // 2. We have a reference to the DOM element
+    // 3. We have time slots data
+    // 4. It's the initial render or data just became available
+    if (!hasScrolledToSixAM && 
+        scheduleBodyRef.current && 
+        scheduleDay.timeSlots.length > 0) {
+      
+      // Create a dedicated scroll function
       const scrollToSixAM = () => {
+        if (!scheduleBodyRef.current) return;
+        
         const sixAMIndex = scheduleDay.timeSlots.findIndex(slot => slot.time === "06:00");
-        if (sixAMIndex !== -1) {
-          console.log("Scrolling schedule to 6AM position");
-          
-          // Calculate approximate position (42px per row based on CSS inspection)
-          const rowHeight = 42; 
-          const scrollPosition = sixAMIndex * rowHeight;
-          
-          // Scroll the container to the calculated position
-          if (scheduleBodyRef.current) {
-            scheduleBodyRef.current.scrollTop = scrollPosition;
-            
-            // Mark that we've scrolled so we don't do it again on re-renders
-            setHasScrolledToSixAM(true);
-            
-            console.log(`Scrolled to position: ${scrollPosition}px (slot index: ${sixAMIndex})`);
-          }
+        if (sixAMIndex === -1) {
+          console.warn("Could not find 6AM time slot");
+          return;
         }
+        
+        console.log(`Attempting to scroll to 6AM (index: ${sixAMIndex})`);
+        
+        // Force layout calculation to ensure accurate measurements
+        const rowHeight = 42; // Height based on CSS inspection
+        const scrollPosition = sixAMIndex * rowHeight;
+        
+        // Actually perform the scroll
+        scheduleBodyRef.current.scrollTop = scrollPosition;
+        console.log(`Set scrollTop to ${scrollPosition}px`);
+        
+        // Verify the scroll position was set
+        console.log(`Current scrollTop after setting: ${scheduleBodyRef.current.scrollTop}px`);
+        
+        // Double-check with a short delay to ensure the scroll worked
+        setTimeout(() => {
+          if (scheduleBodyRef.current) {
+            if (Math.abs(scheduleBodyRef.current.scrollTop - scrollPosition) > 10) {
+              console.warn(`Scroll verification failed: expected ${scrollPosition}px, got ${scheduleBodyRef.current.scrollTop}px`);
+              // Try one more time with a different approach
+              scheduleBodyRef.current.scrollTo({
+                top: scrollPosition,
+                behavior: 'auto'
+              });
+              console.log(`Attempted fallback scroll to ${scrollPosition}px`);
+            } else {
+              console.log(`Scroll verified: at position ${scheduleBodyRef.current.scrollTop}px`);
+            }
+          }
+          
+          // Mark as scrolled regardless - we don't want to keep retrying indefinitely
+          setHasScrolledToSixAM(true);
+        }, 50);
       };
       
-      // Use a short timeout to ensure the DOM is fully rendered
-      const timeoutId = setTimeout(scrollToSixAM, 150);
+      // Use a more substantial delay to ensure DOM is fully ready
+      const timeoutId = setTimeout(scrollToSixAM, 500); 
       
       return () => clearTimeout(timeoutId);
+    }
+  }, [scheduleDay.timeSlots, hasScrolledToSixAM]);
+  
+  // As a backup method, use useLayoutEffect to scroll when component layout is calculated
+  useLayoutEffect(() => {
+    if (initialRenderRef.current && 
+        !hasScrolledToSixAM && 
+        scheduleBodyRef.current && 
+        scheduleDay.timeSlots.length > 0) {
+      
+      const sixAMIndex = scheduleDay.timeSlots.findIndex(slot => slot.time === "06:00");
+      if (sixAMIndex !== -1) {
+        const rowHeight = 42;
+        const scrollPosition = sixAMIndex * rowHeight;
+        
+        console.log(`Layout Effect: Scrolling to 6AM position (${scrollPosition}px)`);
+        scheduleBodyRef.current.scrollTop = scrollPosition;
+        
+        setHasScrolledToSixAM(true);
+        initialRenderRef.current = false;
+      }
     }
   }, [scheduleDay.timeSlots, hasScrolledToSixAM]);
 
