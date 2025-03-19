@@ -10,7 +10,6 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Switch } from '@/components/ui/switch';
 
 const driverColors = [
   '#3B82F6', // Blue
@@ -33,7 +32,6 @@ const DriverPanel: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
-  const [allDriversAvailable, setAllDriversAvailable] = useState(true);
   
   const [newDriver, setNewDriver] = useState<Omit<Driver, 'id'>>({
     name: '',
@@ -43,13 +41,6 @@ const DriverPanel: React.FC = () => {
     notes: '',
     available: true,
   });
-
-  useEffect(() => {
-    if (scheduleDay.drivers.length > 0) {
-      const allAvailable = scheduleDay.drivers.every(driver => driver.available !== false);
-      setAllDriversAvailable(allAvailable);
-    }
-  }, [scheduleDay.drivers]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -170,44 +161,6 @@ const DriverPanel: React.FC = () => {
     }
   };
 
-  const toggleAllDriversAvailability = async () => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "You must be logged in to update drivers.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const newAvailabilityState = !allDriversAvailable;
-    setAllDriversAvailable(newAvailabilityState);
-    
-    try {
-      setIsSyncing(true);
-      
-      const updatePromises = scheduleDay.drivers.map(driver => 
-        updateDriver(driver.id, { ...driver, available: newAvailabilityState })
-      );
-      
-      await Promise.all(updatePromises);
-      
-      toast({
-        title: newAvailabilityState ? "All Drivers Available" : "All Drivers Unavailable",
-        description: `Successfully marked all drivers as ${newAvailabilityState ? 'available' : 'unavailable'}.`,
-      });
-    } catch (error) {
-      console.error('Error updating drivers availability:', error);
-      toast({
-        title: "Update Failed",
-        description: "Failed to update drivers availability. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 header-gradient rounded-t-lg flex justify-between items-center">
@@ -278,20 +231,6 @@ const DriverPanel: React.FC = () => {
       </div>
       
       <div className="p-4 border-t">
-        <div className="flex items-center justify-between mb-4 pb-2 border-b">
-          <div className="flex items-center">
-            <Label htmlFor="all-drivers-availability" className="mr-2">
-              {allDriversAvailable ? "All Drivers Available" : "All Drivers Unavailable"}
-            </Label>
-            <Switch 
-              id="all-drivers-availability"
-              checked={allDriversAvailable}
-              onCheckedChange={toggleAllDriversAvailability}
-              disabled={isSyncing || !user || scheduleDay.drivers.length === 0}
-            />
-          </div>
-        </div>
-
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button className="w-full" variant="default">
@@ -364,6 +303,7 @@ const DriverPanel: React.FC = () => {
           </DialogContent>
         </Dialog>
 
+        {/* Edit Driver Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
           setIsEditDialogOpen(open);
           if (!open) setSelectedDriver(null);
