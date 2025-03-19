@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { DeliveryStop } from '@/types';
-import { MapPin, Clock, AlertCircle, Package, ShoppingBag, GripHorizontal, Copy, Edit, Trash2, Calendar, Phone } from 'lucide-react';
+import { MapPin, Clock, AlertCircle, Package, ShoppingBag, GripHorizontal, Copy, Edit, Trash2, Calendar, Phone, Hash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatTo12Hour } from '@/lib/utils';
 
@@ -53,6 +53,12 @@ const UnassignedStopCard: React.FC<UnassignedStopCardProps> = ({
           <div className="font-medium">{stop.businessName}</div>
           {stop.clientName && (
             <div className="text-sm text-gray-600">{stop.clientName}</div>
+          )}
+          {stop.orderId && (
+            <div className="text-sm text-gray-600 flex items-center">
+              <Hash className="h-3.5 w-3.5 mr-1" />
+              Order ID: {stop.orderId}
+            </div>
           )}
           <div className="flex items-center text-sm text-gray-600 mt-1">
             <MapPin className="h-3.5 w-3.5 mr-1" />

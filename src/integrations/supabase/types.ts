@@ -20,6 +20,7 @@ export type Database = {
           delivery_time: string
           driver_id: string | null
           id: string
+          order_id: string | null
           order_number: string | null
           special_instructions: string | null
           status: string
@@ -37,6 +38,7 @@ export type Database = {
           delivery_time: string
           driver_id?: string | null
           id?: string
+          order_id?: string | null
           order_number?: string | null
           special_instructions?: string | null
           status: string
@@ -54,6 +56,7 @@ export type Database = {
           delivery_time?: string
           driver_id?: string | null
           id?: string
+          order_id?: string | null
           order_number?: string | null
           special_instructions?: string | null
           status?: string

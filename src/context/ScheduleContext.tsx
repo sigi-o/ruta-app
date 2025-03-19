@@ -200,6 +200,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           orderNumber: dbStop.order_number || undefined,
           contactPhone: dbStop.contact_phone || undefined,
           stopType: dbStop.stop_type as 'delivery' | 'pickup' | 'other',
+          orderId: dbStop.order_id || undefined,
         }));
         
         setScheduleDay(prev => ({
@@ -313,6 +314,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             order_number: stop.orderNumber || null,
             contact_phone: stop.contactPhone || null,
             stop_type: stop.stopType,
+            order_id: stop.orderId || null,
           })));
         
         if (insertError) throw insertError;
@@ -333,6 +335,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             order_number: stop.orderNumber || null,
             contact_phone: stop.contactPhone || null,
             stop_type: stop.stopType,
+            order_id: stop.orderId || null,
             updated_at: new Date().toISOString(),
           })
           .eq('id', stop.id)
@@ -664,6 +667,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           order_number: stop.orderNumber || null,
           contact_phone: stop.contactPhone || null,
           stop_type: stop.stopType,
+          order_id: stop.orderId || null,
         });
 
       if (error) {
@@ -747,6 +751,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (updatedStop.orderNumber !== undefined) updatedFields.order_number = updatedStop.orderNumber || null;
       if (updatedStop.contactPhone !== undefined) updatedFields.contact_phone = updatedStop.contactPhone || null;
       if (updatedStop.stopType) updatedFields.stop_type = updatedStop.stopType;
+      if (updatedStop.orderId !== undefined) updatedFields.order_id = updatedStop.orderId || null;
       
       updatedFields.updated_at = new Date().toISOString();
 
@@ -982,7 +987,6 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           driverLoads[id] = 0;
         });
         
-        // Track which stops need to be updated in the database
         const stopsToUpdate: { id: string, driverId: string }[] = [];
         
         sortedTimeSlots.forEach((time) => {
@@ -1000,7 +1004,6 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 status: 'assigned' as const
               };
               
-              // Add to list of stops to update in database
               stopsToUpdate.push({ id: stop.id, driverId });
               
               driverLoads[driverId]++;
@@ -1008,11 +1011,9 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           });
         });
         
-        // After updating local state, immediately update database
         setTimeout(() => {
           console.log(`Auto-assigned ${stopsToUpdate.length} stops, updating database...`);
           
-          // Use Promise.all to update all stops in parallel
           Promise.all(stopsToUpdate.map(({ id, driverId }) => {
             console.log(`Updating stop ${id} in database: driver_id=${driverId}, status=assigned`);
             return supabase
@@ -1107,7 +1108,6 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setIsLoading(true);
     
     try {
-      // Make sure we have data to import
       if (!data || data.length === 0) {
         throw new Error("No valid data to import");
       }
@@ -1117,7 +1117,6 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const newStops: DeliveryStop[] = data.map((row) => {
         const newStopId = uuidv4();
         
-        // Use exact field names from the CSV parser
         return {
           id: newStopId,
           businessName: row.businessName || '',
@@ -1130,7 +1129,8 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           contactPhone: row.contactPhone || '',
           specialInstructions: row.specialInstructions || '',
           items: row.items ? (typeof row.items === 'string' ? [row.items] : row.items) : [],
-          stopType: 'delivery' as const
+          stopType: 'delivery' as const,
+          orderId: row.orderId || null,
         };
       });
       
@@ -1150,6 +1150,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         order_number: stop.orderNumber || null,
         contact_phone: stop.contactPhone || null,
         stop_type: stop.stopType,
+        order_id: stop.orderId || null,
       }));
       
       console.log(`Inserting ${dbStops.length} stops into database`);
@@ -1166,13 +1167,11 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       console.log(`Successfully inserted ${responseData?.length || 0} stops`);
       
-      // Update local state with the new stops
       setScheduleDay(prev => ({
         ...prev,
         stops: [...prev.stops, ...newStops],
       }));
       
-      // Determine if we need to show a warning about the date
       const importedDate = newStops[0]?.deliveryDate;
       const isDateDifferent = importedDate && importedDate !== currentDateString;
       
@@ -1231,6 +1230,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       status: 'unassigned',
       driverId: undefined,
       orderNumber: stopToDuplicate.orderNumber ? `${stopToDuplicate.orderNumber}-copy` : undefined,
+      orderId: stopToDuplicate.orderId ? `${stopToDuplicate.orderId}-copy` : undefined,
     };
     
     try {
@@ -1250,6 +1250,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           order_number: duplicatedStop.orderNumber || null,
           contact_phone: stopToDuplicate.contactPhone || null,
           stop_type: stopToDuplicate.stopType,
+          order_id: duplicatedStop.orderId || null,
         });
 
       if (error) throw error;

@@ -108,6 +108,9 @@ const PrintableSchedule: React.FC<PrintableScheduleProps> = ({
                       {stop.clientName && stop.businessName && (
                         <div><strong className="text-gray-700">Contact:</strong> {stop.clientName}</div>
                       )}
+                      {stop.orderId && (
+                        <div><strong className="text-gray-700">Order ID:</strong> {stop.orderId}</div>
+                      )}
                       {stop.contactPhone && (
                         <div><strong className="text-gray-700">Phone:</strong> {stop.contactPhone}</div>
                       )}

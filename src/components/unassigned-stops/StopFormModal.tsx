@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DeliveryStop } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
@@ -73,6 +74,17 @@ const StopFormModal: React.FC<StopFormModalProps> = ({
                 name="clientName"
                 placeholder="Enter client name"
                 value={stop.clientName || ''}
+                onChange={onInputChange}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="orderId">Order ID (Optional)</Label>
+              <Input
+                id="orderId"
+                name="orderId"
+                placeholder="Enter order ID"
+                value={stop.orderId || ''}
                 onChange={onInputChange}
               />
             </div>
