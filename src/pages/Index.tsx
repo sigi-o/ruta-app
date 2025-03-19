@@ -24,7 +24,7 @@ const ScheduleManager: React.FC = () => {
   const { signOut, user } = useAuth();
   
   const handlePrint = () => {
-    console.log("Print triggered, refreshing print view with current data");
+    console.log(`Print triggered for date: ${currentDateString}`);
     setIsPrintView(false);
     
     setTimeout(() => {

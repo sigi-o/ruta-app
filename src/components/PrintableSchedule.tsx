@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { DeliveryStop, Driver } from '@/types';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { Package, ShoppingBag, AlertCircle } from 'lucide-react';
 
 interface PrintableScheduleProps {
@@ -38,17 +38,30 @@ const PrintableSchedule: React.FC<PrintableScheduleProps> = ({
       };
     });
 
-  // Format the date for display
+  // Format the date for display - Fixed to prevent timezone issues
   let formattedDate = "";
   try {
-    const parsedDate = new Date(selectedDate);
-    if (!isNaN(parsedDate.getTime())) {
-      formattedDate = format(parsedDate, 'EEEE, MMMM d, yyyy');
+    // Parse the YYYY-MM-DD string and set it to noon to avoid timezone issues
+    if (selectedDate && selectedDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      // Create date parts from the string to ensure we're working with local date
+      const [year, month, day] = selectedDate.split('-').map(Number);
+      // Create date with local timezone (months are 0-indexed in JS Date)
+      const parsedDate = new Date(year, month - 1, day, 12, 0, 0);
+      
+      if (!isNaN(parsedDate.getTime())) {
+        formattedDate = format(parsedDate, 'EEEE, MMMM d, yyyy');
+        console.log(`PrintableSchedule: Formatted date ${selectedDate} to ${formattedDate}`);
+      } else {
+        formattedDate = "Schedule Date";
+        console.error(`PrintableSchedule: Invalid date format: ${selectedDate}`);
+      }
     } else {
       formattedDate = "Schedule Date";
+      console.error(`PrintableSchedule: Invalid date string: ${selectedDate}`);
     }
   } catch (error) {
     formattedDate = "Schedule Date";
+    console.error("PrintableSchedule: Error formatting date:", error);
   }
   
   // Format time to 12-hour format
