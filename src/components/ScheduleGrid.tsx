@@ -17,6 +17,7 @@ const ScheduleGrid: React.FC = () => {
   const { currentDate, currentDateString, goToNextDay, goToPreviousDay, isDateValid } = useDateSystem();
   const [expandedStopId, setExpandedStopId] = useState<string | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [hasScrolledToSixAM, setHasScrolledToSixAM] = useState(false);
   const { toast } = useToast();
   const scheduleBodyRef = useRef<HTMLDivElement>(null);
 
@@ -38,16 +39,37 @@ const ScheduleGrid: React.FC = () => {
     }
   }, [scheduleDay.timeSlots]);
   
-  // Scroll to 6AM when the component loads
+  // Scroll to 6AM when the component loads - improved implementation
   useEffect(() => {
-    if (scheduleBodyRef.current && scheduleDay.timeSlots.length > 0) {
-      const sixAMIndex = scheduleDay.timeSlots.findIndex(slot => slot.time === "06:00");
-      if (sixAMIndex !== -1) {
-        const rowHeight = 40; // Height of each time row in pixels
-        scheduleBodyRef.current.scrollTop = sixAMIndex * rowHeight;
-      }
+    // Only proceed if we haven't scrolled yet and have data
+    if (!hasScrolledToSixAM && scheduleBodyRef.current && scheduleDay.timeSlots.length > 0) {
+      const scrollToSixAM = () => {
+        const sixAMIndex = scheduleDay.timeSlots.findIndex(slot => slot.time === "06:00");
+        if (sixAMIndex !== -1) {
+          console.log("Scrolling schedule to 6AM position");
+          
+          // Calculate approximate position (42px per row based on CSS inspection)
+          const rowHeight = 42; 
+          const scrollPosition = sixAMIndex * rowHeight;
+          
+          // Scroll the container to the calculated position
+          if (scheduleBodyRef.current) {
+            scheduleBodyRef.current.scrollTop = scrollPosition;
+            
+            // Mark that we've scrolled so we don't do it again on re-renders
+            setHasScrolledToSixAM(true);
+            
+            console.log(`Scrolled to position: ${scrollPosition}px (slot index: ${sixAMIndex})`);
+          }
+        }
+      };
+      
+      // Use a short timeout to ensure the DOM is fully rendered
+      const timeoutId = setTimeout(scrollToSixAM, 150);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [scheduleDay.timeSlots]);
+  }, [scheduleDay.timeSlots, hasScrolledToSixAM]);
 
   const handleStopClick = (stopId: string) => {
     if (expandedStopId === stopId) {
