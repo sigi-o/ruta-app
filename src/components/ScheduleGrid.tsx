@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { useDateSystem } from '@/context/DateContext';
 import { format } from 'date-fns';
@@ -18,6 +18,7 @@ const ScheduleGrid: React.FC = () => {
   const [expandedStopId, setExpandedStopId] = useState<string | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
   const { toast } = useToast();
+  const scheduleBodyRef = useRef<HTMLDivElement>(null);
 
   const {
     draggingStop,
@@ -34,6 +35,17 @@ const ScheduleGrid: React.FC = () => {
     if (scheduleDay.timeSlots.length > 0) {
       console.log(`First time slot: ${scheduleDay.timeSlots[0]?.time} (${scheduleDay.timeSlots[0]?.label})`);
       console.log(`Last time slot: ${scheduleDay.timeSlots[scheduleDay.timeSlots.length - 1]?.time} (${scheduleDay.timeSlots[scheduleDay.timeSlots.length - 1]?.label})`);
+    }
+  }, [scheduleDay.timeSlots]);
+  
+  // Scroll to 6AM when the component loads
+  useEffect(() => {
+    if (scheduleBodyRef.current && scheduleDay.timeSlots.length > 0) {
+      const sixAMIndex = scheduleDay.timeSlots.findIndex(slot => slot.time === "06:00");
+      if (sixAMIndex !== -1) {
+        const rowHeight = 40; // Height of each time row in pixels
+        scheduleBodyRef.current.scrollTop = sixAMIndex * rowHeight;
+      }
     }
   }, [scheduleDay.timeSlots]);
 
@@ -162,7 +174,7 @@ const ScheduleGrid: React.FC = () => {
             <ScheduleHeader availableDrivers={availableDrivers} />
           </div>
 
-          <div className="schedule-body">
+          <div className="schedule-body" ref={scheduleBodyRef}>
             {scheduleDay.timeSlots.map((timeSlot, index) => (
               <TimeRow
                 key={`${timeSlot.time}-${index}`}
