@@ -1,3 +1,4 @@
+
 import { format } from 'date-fns';
 import { ParsedCsvData, CsvParseError, CsvParseWarning } from '@/types';
 
@@ -37,6 +38,7 @@ export function parseDispatchCsv(fileContent: string): ParsedCsvData {
     deliveryTime: 1,  // Column B
     clientName: 5,    // Column F
     businessName: 6,  // Column G
+    orderId: 7,       // Column H (new field for Order ID)
     address: 10,      // Column K
     phone: 11,        // Column L
     notes: 13,        // Column N
@@ -79,6 +81,7 @@ export function parseDispatchCsv(fileContent: string): ParsedCsvData {
       const deliveryTime = values.length > columnMap.deliveryTime ? cleanString(values[columnMap.deliveryTime] || '') : '';
       const notes = values.length > columnMap.notes ? cleanString(values[columnMap.notes] || '') : '';
       const orderNumber = values.length > columnMap.orderNumber ? cleanString(values[columnMap.orderNumber] || '') : '';
+      const orderId = values.length > columnMap.orderId ? cleanString(values[columnMap.orderId] || '') : ''; // Extract Order ID from Column H
       
       // Validate required fields
       const missingFields: string[] = [];
@@ -118,6 +121,7 @@ export function parseDispatchCsv(fileContent: string): ParsedCsvData {
         deliveryDate: reportDate || format(new Date(), 'yyyy-MM-dd'),
         specialInstructions: notes,
         orderNumber,
+        orderId, // Add the Order ID to the delivery record
         stopType: 'delivery'
       });
       
