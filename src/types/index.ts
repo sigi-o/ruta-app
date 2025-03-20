@@ -1,3 +1,4 @@
+
 export interface Driver {
   id: string;
   name: string;
@@ -6,6 +7,13 @@ export interface Driver {
   phoneNumber?: string;
   notes?: string;
   available?: boolean;
+}
+
+export interface DriverAvailability {
+  id: string;
+  driverId: string;
+  date: string;
+  isAvailable: boolean;
 }
 
 export interface DeliveryStop {
@@ -36,6 +44,7 @@ export interface ScheduleDay {
   drivers: Driver[];
   stops: DeliveryStop[];
   timeSlots: TimeSlot[];
+  driverAvailability: DriverAvailability[];
 }
 
 export interface ImportedCsvData {

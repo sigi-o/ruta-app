@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
-import { Driver, DeliveryStop, TimeSlot, ScheduleDay } from '@/types';
+import { Driver, DeliveryStop, TimeSlot, ScheduleDay, DriverAvailability } from '@/types';
 import { generateTimeSlots } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -28,6 +28,7 @@ interface ScheduleContextType {
   getStopsForDate: (date: string) => DeliveryStop[];
   syncDriversWithDatabase: () => Promise<void>;
   syncStopsWithDatabase: () => Promise<void>;
+  updateDriverAvailability: (driverId: string, date: string, isAvailable: boolean) => Promise<void>;
 }
 
 const defaultTimeSlots = generateTimeSlots('02:00', '23:30', 15);
@@ -104,6 +105,7 @@ const emptyScheduleDay: ScheduleDay = {
   drivers: [],
   stops: [],
   timeSlots: defaultTimeSlots,
+  driverAvailability: [],
 };
 
 export const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined);
@@ -169,6 +171,161 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       dataFetchedFromDb.current = false;
     }
   }, [user, currentDateString]);
+
+  useEffect(() => {
+    if (user && currentDateString) {
+      fetchDriverAvailabilityForDate(currentDateString);
+    }
+  }, [user, currentDateString]);
+
+  const fetchDriverAvailabilityForDate = async (date: string) => {
+    if (!user) return;
+    
+    try {
+      setIsLoading(true);
+      console.log(`Fetching driver availability for date: ${date}`);
+      
+      const { data, error } = await supabase
+        .from('driver_availability')
+        .select('id, driver_id, date, is_available')
+        .eq('date', date);
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data) {
+        console.log(`Found ${data.length} driver availability records for date ${date}`);
+        
+        const availability: DriverAvailability[] = data.map(item => ({
+          id: item.id,
+          driverId: item.driver_id,
+          date: item.date,
+          isAvailable: item.is_available
+        }));
+        
+        setScheduleDay(prev => ({
+          ...prev,
+          driverAvailability: availability,
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching driver availability:', error);
+      toast({
+        title: "Error Loading Driver Availability",
+        description: "Failed to load driver availability from the database.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const updateDriverAvailability = async (driverId: string, date: string, isAvailable: boolean) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to update driver availability.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      console.log(`Updating availability for driver ${driverId} on ${date} to ${isAvailable}`);
+      
+      const { data: existingData, error: checkError } = await supabase
+        .from('driver_availability')
+        .select('id')
+        .eq('driver_id', driverId)
+        .eq('date', date)
+        .single();
+      
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError;
+      }
+      
+      let result;
+      
+      if (existingData) {
+        result = await supabase
+          .from('driver_availability')
+          .update({
+            is_available: isAvailable,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingData.id);
+      } else {
+        result = await supabase
+          .from('driver_availability')
+          .insert({
+            driver_id: driverId,
+            date: date,
+            is_available: isAvailable
+          });
+      }
+      
+      if (result.error) {
+        throw result.error;
+      }
+      
+      setScheduleDay(prev => {
+        const updatedAvailability = [...prev.driverAvailability];
+        const existingIndex = updatedAvailability.findIndex(
+          a => a.driverId === driverId && a.date === date
+        );
+        
+        if (existingIndex !== -1) {
+          updatedAvailability[existingIndex].isAvailable = isAvailable;
+        } else {
+          updatedAvailability.push({
+            id: uuidv4(),
+            driverId,
+            date,
+            isAvailable
+          });
+        }
+        
+        return {
+          ...prev,
+          driverAvailability: updatedAvailability
+        };
+      });
+      
+      if (!isAvailable) {
+        const stopsToUnassign = scheduleDay.stops.filter(
+          stop => stop.driverId === driverId && stop.deliveryDate === date
+        );
+        
+        if (stopsToUnassign.length > 0) {
+          for (const stop of stopsToUnassign) {
+            await unassignStop(stop.id);
+          }
+          
+          toast({
+            title: "Stops Unassigned",
+            description: `${stopsToUnassign.length} stops were unassigned because the driver is now unavailable for this date.`,
+          });
+        }
+      }
+      
+      toast({
+        title: "Availability Updated",
+        description: `Driver availability for ${date} has been updated.`,
+      });
+      
+    } catch (error) {
+      console.error('Error updating driver availability:', error);
+      toast({
+        title: "Error Updating Availability",
+        description: "Failed to update driver availability in the database.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const fetchStopsFromDatabase = async () => {
     if (!user) return;
@@ -1294,7 +1451,8 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       duplicateStop,
       getStopsForDate,
       syncDriversWithDatabase,
-      syncStopsWithDatabase
+      syncStopsWithDatabase,
+      updateDriverAvailability
     }}>
       {children}
     </ScheduleContext.Provider>

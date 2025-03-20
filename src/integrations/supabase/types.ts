@@ -66,6 +66,41 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_availability: {
+        Row: {
+          created_at: string | null
+          date: string
+          driver_id: string
+          id: string
+          is_available: boolean
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          driver_id: string
+          id?: string
+          is_available?: boolean
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          driver_id?: string
+          id?: string
+          is_available?: boolean
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_availability_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           available: boolean | null

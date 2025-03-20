@@ -111,7 +111,20 @@ const ScheduleGrid: React.FC = () => {
   const getStopsByDriverAndTime = () => {
     const result: Record<string, Record<string, any[]>> = {};
     
-    const availableDrivers = scheduleDay.drivers.filter(driver => driver.available !== false);
+    // Get available drivers - now using driver availability
+    const availableDrivers = scheduleDay.drivers.filter(driver => {
+      // First check if there's a specific availability record for this date
+      const availabilityRecord = scheduleDay.driverAvailability.find(
+        a => a.driverId === driver.id && a.date === currentDateString
+      );
+      
+      if (availabilityRecord) {
+        return availabilityRecord.isAvailable;
+      }
+      
+      // If no record exists, fall back to the driver's general availability
+      return driver.available !== false;
+    });
 
     // Initialize all time slots for all drivers
     availableDrivers.forEach(driver => {
@@ -125,8 +138,10 @@ const ScheduleGrid: React.FC = () => {
     
     stopsForCurrentDate.forEach(stop => {
       if (stop.status === 'assigned' && stop.driverId) {
-        const driver = scheduleDay.drivers.find(d => d.id === stop.driverId);
-        if (driver && driver.available !== false) {
+        // Check if driver is available for this date
+        const isDriverAvailable = availableDrivers.some(d => d.id === stop.driverId);
+        
+        if (isDriverAvailable) {
           if (!result[stop.driverId][stop.deliveryTime]) {
             result[stop.driverId][stop.deliveryTime] = [];
           }
@@ -182,7 +197,21 @@ const ScheduleGrid: React.FC = () => {
     };
   }, []);
 
-  const availableDrivers = scheduleDay.drivers.filter(driver => driver.available !== false);
+  // Get available drivers for the current date
+  const availableDrivers = scheduleDay.drivers.filter(driver => {
+    // Check for date-specific availability
+    const availabilityRecord = scheduleDay.driverAvailability.find(
+      a => a.driverId === driver.id && a.date === currentDateString
+    );
+    
+    if (availabilityRecord) {
+      return availabilityRecord.isAvailable;
+    }
+    
+    // Fall back to general availability
+    return driver.available !== false;
+  });
+
   const stopsByDriverAndTime = getStopsByDriverAndTime();
 
   let formattedDate = "";

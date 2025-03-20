@@ -1,10 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
+import { useDateSystem } from '@/context/DateContext';
 import { Driver } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trash2, Plus, User, Phone, UserX, PaintBucket, UserCheck, Pencil, Save } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Trash2, Plus, User, Phone, UserX, PaintBucket, UserCheck, Pencil } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
@@ -25,7 +27,8 @@ const driverColors = [
 ];
 
 const DriverPanel: React.FC = () => {
-  const { scheduleDay, addDriver, removeDriver, updateDriver, syncDriversWithDatabase } = useSchedule();
+  const { scheduleDay, addDriver, removeDriver, updateDriver, syncDriversWithDatabase, updateDriverAvailability } = useSchedule();
+  const { currentDateString } = useDateSystem();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
@@ -65,7 +68,7 @@ const DriverPanel: React.FC = () => {
   const handleAddDriver = async () => {
     if (newDriver.name.trim() && user) {
       try {
-        addDriver(newDriver);
+        await addDriver(newDriver);
         setNewDriver({
           name: '',
           color: driverColors[Math.floor(Math.random() * driverColors.length)],
@@ -161,10 +164,55 @@ const DriverPanel: React.FC = () => {
     }
   };
 
+  // Filter drivers based on availability for the current date
+  const availableDrivers = scheduleDay.drivers.filter(driver => {
+    // First check if there's a specific availability record for this date
+    const availabilityRecord = scheduleDay.driverAvailability.find(
+      a => a.driverId === driver.id && a.date === currentDateString
+    );
+    
+    if (availabilityRecord) {
+      return availabilityRecord.isAvailable;
+    }
+    
+    // If no specific record exists, fall back to the driver's general availability
+    return driver.available !== false;
+  });
+  
+  // Get unavailable drivers for the current date
+  const unavailableDrivers = scheduleDay.drivers.filter(driver => {
+    const availabilityRecord = scheduleDay.driverAvailability.find(
+      a => a.driverId === driver.id && a.date === currentDateString
+    );
+    
+    if (availabilityRecord) {
+      return !availabilityRecord.isAvailable;
+    }
+    
+    return driver.available === false;
+  });
+
+  // Check if a driver is available for the current date
+  const isDriverAvailable = (driverId: string): boolean => {
+    const availabilityRecord = scheduleDay.driverAvailability.find(
+      a => a.driverId === driverId && a.date === currentDateString
+    );
+    
+    if (availabilityRecord) {
+      return availabilityRecord.isAvailable;
+    }
+    
+    const driver = scheduleDay.drivers.find(d => d.id === driverId);
+    return driver?.available !== false;
+  };
+
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 header-gradient rounded-t-lg flex justify-between items-center">
         <h2 className="text-lg font-medium">Drivers</h2>
+        <div className="text-xs text-gray-700 opacity-80">
+          Showing for: {currentDateString}
+        </div>
       </div>
       
       <div className="p-4 flex-grow overflow-y-auto">
@@ -176,56 +224,100 @@ const DriverPanel: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-3 animate-entrance">
-            {scheduleDay.drivers.map((driver) => (
-              <Card 
-                key={driver.id} 
-                className={`overflow-hidden border-l-4 transition-all cursor-pointer hover:shadow-md ${!driver.available ? 'opacity-60' : ''}`} 
-                style={{ borderLeftColor: driver.color }}
-                onClick={() => handleDriverCardClick(driver)}
-              >
-                <CardContent className="p-3">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center space-x-3">
-                      <div className="driver-avatar relative" style={{ backgroundColor: driver.color }}>
-                        {driver.name.charAt(0)}
-                        {!driver.available && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-gray-800/30 rounded-full">
-                            <UserX className="h-3 w-3 text-white" />
+            {availableDrivers.length > 0 && (
+              <>
+                <h3 className="text-sm font-medium text-gray-500 mt-2">Available Today</h3>
+                {availableDrivers.map((driver) => (
+                  <Card 
+                    key={driver.id} 
+                    className="overflow-hidden border-l-4 transition-all cursor-pointer hover:shadow-md" 
+                    style={{ borderLeftColor: driver.color }}
+                    onClick={() => handleDriverCardClick(driver)}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center space-x-3">
+                          <div className="driver-avatar" style={{ backgroundColor: driver.color }}>
+                            {driver.name.charAt(0)}
                           </div>
-                        )}
+                          <div>
+                            <h3 className="font-medium">{driver.name}</h3>
+                            {driver.vehicleType && (
+                              <p className="text-xs text-gray-500">{driver.vehicleType}</p>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-gray-400 hover:text-blue-500"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDriverCardClick(driver);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <div>
-                        <h3 className="font-medium flex items-center gap-1">
-                          {driver.name}
-                          {!driver.available && <span className="text-xs text-gray-500">(Unavailable)</span>}
-                        </h3>
-                        {driver.vehicleType && (
-                          <p className="text-xs text-gray-500">{driver.vehicleType}</p>
-                        )}
+                      
+                      {driver.phoneNumber && (
+                        <div className="mt-2 flex items-center text-xs text-gray-500">
+                          <Phone className="h-3 w-3 mr-1" />
+                          {driver.phoneNumber}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </>
+            )}
+            
+            {unavailableDrivers.length > 0 && (
+              <>
+                <h3 className="text-sm font-medium text-gray-500 mt-4">Unavailable Today</h3>
+                {unavailableDrivers.map((driver) => (
+                  <Card 
+                    key={driver.id} 
+                    className="overflow-hidden border-l-4 transition-all cursor-pointer hover:shadow-md opacity-60" 
+                    style={{ borderLeftColor: driver.color }}
+                    onClick={() => handleDriverCardClick(driver)}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center space-x-3">
+                          <div className="driver-avatar relative" style={{ backgroundColor: driver.color }}>
+                            {driver.name.charAt(0)}
+                            <div className="absolute inset-0 flex items-center justify-center bg-gray-800/30 rounded-full">
+                              <UserX className="h-3 w-3 text-white" />
+                            </div>
+                          </div>
+                          <div>
+                            <h3 className="font-medium flex items-center gap-1">
+                              {driver.name}
+                              <span className="text-xs text-gray-500">(Unavailable)</span>
+                            </h3>
+                            {driver.vehicleType && (
+                              <p className="text-xs text-gray-500">{driver.vehicleType}</p>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-gray-400 hover:text-blue-500"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDriverCardClick(driver);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                       </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-gray-400 hover:text-blue-500"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDriverCardClick(driver);
-                      }}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  
-                  {driver.phoneNumber && (
-                    <div className="mt-2 flex items-center text-xs text-gray-500">
-                      <Phone className="h-3 w-3 mr-1" />
-                      {driver.phoneNumber}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </>
+            )}
           </div>
         )}
       </div>
@@ -366,19 +458,23 @@ const DriverPanel: React.FC = () => {
 
                 <div className="flex flex-col gap-2 pt-2">
                   <Button 
-                    variant={selectedDriver.available ? "outline" : "default"}
-                    className={`${!selectedDriver.available ? "bg-green-600 hover:bg-green-700" : ""}`}
-                    onClick={toggleDriverAvailability}
+                    variant={isDriverAvailable(selectedDriver.id) ? "outline" : "default"}
+                    className={`${!isDriverAvailable(selectedDriver.id) ? "bg-green-600 hover:bg-green-700" : ""}`}
+                    onClick={async () => {
+                      const currentAvailable = isDriverAvailable(selectedDriver.id);
+                      await updateDriverAvailability(selectedDriver.id, currentDateString, !currentAvailable);
+                      toggleDriverAvailability();
+                    }}
                   >
-                    {selectedDriver.available ? (
+                    {isDriverAvailable(selectedDriver.id) ? (
                       <>
                         <UserX className="h-4 w-4 mr-2" /> 
-                        Mark as Unavailable
+                        Mark as Unavailable for {currentDateString}
                       </>
                     ) : (
                       <>
                         <UserCheck className="h-4 w-4 mr-2" /> 
-                        Mark as Available
+                        Mark as Available for {currentDateString}
                       </>
                     )}
                   </Button>
