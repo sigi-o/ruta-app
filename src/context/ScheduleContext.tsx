@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { Driver, DeliveryStop, TimeSlot, ScheduleDay, DriverAvailability } from '@/types';
 import { generateTimeSlots } from '@/lib/utils';
@@ -119,7 +118,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   
   const [scheduleDay, setScheduleDay] = useState<ScheduleDay>(emptyScheduleDay);
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+  const { errorToast } = useToast();
   const initialLoadComplete = useRef(false);
   const dataFetchedFromDb = useRef(false);
 
@@ -213,10 +212,9 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     } catch (error) {
       console.error('Error fetching driver availability:', error);
-      toast({
+      errorToast({
         title: "Error Loading Driver Availability",
         description: "Failed to load driver availability from the database.",
-        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -225,10 +223,9 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   
   const updateDriverAvailability = async (driverId: string, date: string, isAvailable: boolean) => {
     if (!user) {
-      toast({
+      errorToast({
         title: "Authentication Required",
         description: "You must be logged in to update driver availability.",
-        variant: "destructive",
       });
       return;
     }
@@ -295,9 +292,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         };
       });
       
-      // Only unassign stops for this specific date if the driver is now unavailable
       if (!isAvailable) {
-        // Filter stops to only include those for this specific date
         const stopsToUnassign = scheduleDay.stops.filter(
           stop => stop.driverId === driverId && stop.deliveryDate === date
         );
@@ -307,24 +302,17 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             await unassignStop(stop.id);
           }
           
-          toast({
-            title: "Stops Unassigned",
-            description: `${stopsToUnassign.length} stops were unassigned because the driver is now unavailable for this date.`,
-          });
+          console.log(`${stopsToUnassign.length} stops were unassigned because the driver is now unavailable for this date.`);
         }
       }
       
-      toast({
-        title: "Availability Updated",
-        description: `Driver availability for ${date} has been updated.`,
-      });
+      console.log(`Driver availability for ${date} has been updated.`);
       
     } catch (error) {
       console.error('Error updating driver availability:', error);
-      toast({
+      errorToast({
         title: "Error Updating Availability",
         description: "Failed to update driver availability in the database.",
-        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -373,10 +361,9 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     } catch (error) {
       console.error('Error fetching stops:', error);
-      toast({
+      errorToast({
         title: "Error Loading Stops",
         description: "Failed to load stops from the database.",
-        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -419,10 +406,9 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     } catch (error) {
       console.error('Error fetching drivers:', error);
-      toast({
+      errorToast({
         title: "Error Loading Drivers",
         description: "Failed to load drivers from the database.",
-        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -431,10 +417,9 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const syncStopsWithDatabase = async () => {
     if (!user) {
-      toast({
+      errorToast({
         title: "Authentication Required",
         description: "You must be logged in to sync with the database.",
-        variant: "destructive",
       });
       return;
     }
@@ -515,17 +500,13 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (deleteError) throw deleteError;
       }
       
-      toast({
-        title: "Sync Complete",
-        description: `Added: ${stopsToAdd.length}, Updated: ${stopsToUpdate.length}, Deleted: ${stopsToDelete.length}`,
-      });
+      console.log(`Sync Complete - Added: ${stopsToAdd.length}, Updated: ${stopsToUpdate.length}, Deleted: ${stopsToDelete.length}`);
       
     } catch (error) {
       console.error('Error syncing stops with database:', error);
-      toast({
+      errorToast({
         title: "Sync Failed",
         description: "Failed to synchronize stops with the database.",
-        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -534,10 +515,9 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const syncDriversWithDatabase = async () => {
     if (!user) {
-      toast({
+      errorToast({
         title: "Authentication Required",
         description: "You must be logged in to sync with the database.",
-        variant: "destructive",
       });
       return;
     }
@@ -606,17 +586,13 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (deleteError) throw deleteError;
       }
       
-      toast({
-        title: "Sync Complete",
-        description: `Added: ${driversToAdd.length}, Updated: ${driversToUpdate.length}, Deleted: ${driversToDelete.length}`,
-      });
+      console.log(`Sync Complete - Added: ${driversToAdd.length}, Updated: ${driversToUpdate.length}, Deleted: ${driversToDelete.length}`);
       
     } catch (error) {
       console.error('Error syncing drivers with database:', error);
-      toast({
+      errorToast({
         title: "Sync Failed",
         description: "Failed to synchronize drivers with the database.",
-        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -629,10 +605,9 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const addDriver = async (driver: Omit<Driver, 'id'>) => {
     if (!user) {
-      toast({
+      errorToast({
         title: "Authentication Required",
         description: "You must be logged in to add drivers.",
-        variant: "destructive",
       });
       return;
     }
@@ -666,16 +641,12 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         drivers: [...prev.drivers, newDriver],
       }));
 
-      toast({
-        title: "Driver Added",
-        description: `${driver.name} has been added to the schedule.`,
-      });
+      console.log(`Driver ${driver.name} has been added to the schedule.`);
     } catch (error) {
       console.error('Error adding driver to database:', error);
-      toast({
+      errorToast({
         title: "Error Adding Driver",
         description: "Failed to add driver to the database.",
-        variant: "destructive",
       });
       throw error;
     }
@@ -683,10 +654,9 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const removeDriver = async (driverId: string) => {
     if (!user) {
-      toast({
+      errorToast({
         title: "Authentication Required",
         description: "You must be logged in to remove drivers.",
-        variant: "destructive",
       });
       return;
     }
@@ -712,16 +682,12 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         };
       });
 
-      toast({
-        title: "Driver Removed",
-        description: "Driver has been removed and their stops unassigned.",
-      });
+      console.log("Driver has been removed and their stops unassigned.");
     } catch (error) {
       console.error('Error removing driver from database:', error);
-      toast({
+      errorToast({
         title: "Error Removing Driver",
         description: "Failed to remove driver from the database.",
-        variant: "destructive",
       });
       throw error;
     }
@@ -729,10 +695,9 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const updateDriver = async (driverId: string, updatedDriver: Partial<Driver>) => {
     if (!user) {
-      toast({
+      errorToast({
         title: "Authentication Required",
         description: "You must be logged in to update drivers.",
-        variant: "destructive",
       });
       return;
     }
@@ -755,24 +720,18 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (error) throw error;
 
       setScheduleDay(prev => {
-        // Only unassign stops for the current date if the driver is marked unavailable
         let updatedStops = [...prev.stops];
         
         if (updatedDriver.available === false) {
-          // If general availability is set to false, also create/update a driver_availability record for current date
           updateDriverAvailability(driverId, currentDateString, false);
           
-          // Only unassign stops for the current date
           updatedStops = prev.stops.map(stop => 
             stop.driverId === driverId && stop.deliveryDate === currentDateString 
               ? { ...stop, driverId: undefined, status: 'unassigned' as const } 
               : stop
           );
           
-          toast({
-            title: "Driver Marked Unavailable",
-            description: `All stops for today (${currentDateString}) assigned to this driver have been unassigned.`,
-          });
+          console.log(`All stops for today (${currentDateString}) assigned to this driver have been unassigned.`);
         }
 
         return {
@@ -784,16 +743,12 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         };
       });
 
-      toast({
-        title: "Driver Updated",
-        description: "Driver information has been updated.",
-      });
+      console.log("Driver information has been updated.");
     } catch (error) {
       console.error('Error updating driver in database:', error);
-      toast({
+      errorToast({
         title: "Error Updating Driver",
         description: "Failed to update driver in the database.",
-        variant: "destructive",
       });
       throw error;
     }
@@ -801,10 +756,9 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const addStop = async (stop: Omit<DeliveryStop, 'id' | 'status'>) => {
     if (!user) {
-      toast({
+      errorToast({
         title: "Authentication Required",
         description: "You must be logged in to add stops.",
-        variant: "destructive",
       });
       return;
     }
@@ -848,33 +802,27 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }));
 
       if (newStop.deliveryDate !== currentDateString) {
-        toast({
+        errorToast({
           title: "Different Delivery Date",
           description: `This stop is scheduled for ${newStop.deliveryDate}, not the currently selected date (${currentDateString}).`,
-          variant: "destructive",
         });
       } else {
-        toast({
-          title: "Stop Added",
-          description: `${stop.businessName} has been added to the schedule.`,
-        });
+        console.log(`${stop.businessName} has been added to the schedule.`);
       }
     } catch (error) {
       console.error('Error adding stop to database:', error);
-      toast({
+      errorToast({
         title: "Error Adding Stop",
         description: "Failed to add stop to the database.",
-        variant: "destructive",
       });
     }
   };
 
   const updateStop = async (stopId: string, updatedStop: Partial<DeliveryStop>) => {
     if (!user) {
-      toast({
+      errorToast({
         title: "Authentication Required",
         description: "You must be logged in to update stops.",
-        variant: "destructive",
       });
       return;
     }
@@ -891,10 +839,9 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       if (isDateChanging && updatedStop.deliveryDate !== currentDateString) {
         setTimeout(() => {
-          toast({
+          errorToast({
             title: "Date Changed",
             description: `Stop date changed to ${updatedStop.deliveryDate}, which differs from current view (${currentDateString}).`,
-            variant: "destructive",
           });
         }, 0);
       }
@@ -924,564 +871,4 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       updatedFields.updated_at = new Date().toISOString();
 
       console.log(`Updating stop in database: ${stopId} with fields:`, updatedFields);
-      const { error } = await supabase
-        .from('delivery_stops')
-        .update(updatedFields)
-        .eq('id', stopId)
-        .eq('user_id', user.id);
-
-      if (error) {
-        console.error('Database error when updating stop:', error);
-        throw error;
-      } else {
-        console.log('Successfully updated stop in database');
-      }
-    } catch (error) {
-      console.error('Error updating stop in database:', error);
-      toast({
-        title: "Database Update Failed",
-        description: "The stop was updated locally but failed to update in the database.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const removeStop = async (stopId: string) => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "You must be logged in to remove stops.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setScheduleDay(prev => ({
-      ...prev,
-      stops: prev.stops.filter(stop => stop.id !== stopId),
-    }));
-    
-    try {
-      const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(stopId);
-      
-      if (!isValidUUID) {
-        console.error('Invalid UUID format for stopId:', stopId);
-        toast({
-          title: "Error Removing Stop",
-          description: "The stop could not be removed from the database due to an invalid ID format.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      const { error } = await supabase
-        .from('delivery_stops')
-        .delete()
-        .eq('id', stopId)
-        .eq('user_id', user.id);
-
-      if (error) {
-        console.error('Database error when deleting stop:', error);
-        throw error;
-      }
-      
-      toast({
-        title: "Stop Removed",
-        description: "The stop has been removed from the schedule.",
-      });
-    } catch (error) {
-      console.error('Error removing stop from database:', error);
-      toast({
-        title: "Database Removal Failed",
-        description: "The stop was removed locally but failed to delete from the database.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const assignStop = async (stopId: string, driverId: string) => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "You must be logged in to assign stops.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    console.log(`Assigning stop ${stopId} to driver ${driverId}`);
-    
-    setScheduleDay(prev => ({
-      ...prev,
-      stops: prev.stops.map(stop => 
-        stop.id === stopId 
-          ? { 
-              ...stop, 
-              driverId, 
-              status: 'assigned' as const 
-            } 
-          : stop
-      ),
-    }));
-
-    try {
-      console.log(`Updating stop in database: ${stopId}, driver_id: ${driverId}, status: assigned`);
-      const { error } = await supabase
-        .from('delivery_stops')
-        .update({
-          driver_id: driverId,
-          status: 'assigned',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', stopId)
-        .eq('user_id', user.id);
-
-      if (error) {
-        console.error('Database error when assigning stop:', error);
-        throw error;
-      } else {
-        console.log('Successfully updated stop in database');
-      }
-    } catch (error) {
-      console.error('Error assigning stop in database:', error);
-      toast({
-        title: "Database Update Failed",
-        description: "The stop was assigned locally but failed to update in the database.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const unassignStop = async (stopId: string) => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "You must be logged in to unassign stops.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    console.log(`Unassigning stop ${stopId}`);
-    
-    setScheduleDay(prev => ({
-      ...prev,
-      stops: prev.stops.map(stop => 
-        stop.id === stopId 
-          ? { 
-              ...stop, 
-              driverId: undefined, 
-              status: 'unassigned' as const 
-            } 
-          : stop
-      ),
-    }));
-
-    try {
-      console.log(`Updating stop in database: ${stopId}, driver_id: null, status: unassigned`);
-      const { error } = await supabase
-        .from('delivery_stops')
-        .update({
-          driver_id: null,
-          status: 'unassigned',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', stopId)
-        .eq('user_id', user.id);
-
-      if (error) {
-        console.error('Database error when unassigning stop:', error);
-        throw error;
-      } else {
-        console.log('Successfully unassigned stop in database');
-      }
-    } catch (error) {
-      console.error('Error unassigning stop in database:', error);
-      toast({
-        title: "Database Update Failed",
-        description: "The stop was unassigned locally but failed to update in the database.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const autoAssignStops = () => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "You must be logged in to auto-assign stops.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    setTimeout(() => {
-      setScheduleDay(prev => {
-        const unassignedStops = [...prev.stops.filter(stop => stop.status === 'unassigned')];
-        
-        const stopsByTime: Record<string, DeliveryStop[]> = {};
-        
-        unassignedStops.forEach(stop => {
-          if (!stopsByTime[stop.deliveryTime]) {
-            stopsByTime[stop.deliveryTime] = [];
-          }
-          stopsByTime[stop.deliveryTime].push(stop);
-        });
-        
-        const availableDriverIds = prev.drivers
-          .filter(d => d.available !== false)
-          .map(d => d.id);
-        
-        if (availableDriverIds.length === 0) {
-          setTimeout(() => {
-            toast({
-              title: "No Available Drivers",
-              description: "There are no available drivers to assign stops to.",
-              variant: "destructive",
-            });
-          }, 0);
-          
-          return prev;
-        }
-        
-        const updatedStops = [...prev.stops];
-        
-        const sortedTimeSlots = Object.keys(stopsByTime).sort();
-        
-        const driverLoads: Record<string, number> = {};
-        availableDriverIds.forEach(id => {
-          driverLoads[id] = 0;
-        });
-        
-        const stopsToUpdate: { id: string, driverId: string }[] = [];
-        
-        sortedTimeSlots.forEach((time) => {
-          const stopsForTime = stopsByTime[time];
-          
-          stopsForTime.forEach((stop) => {
-            const driverId = Object.entries(driverLoads)
-              .sort((a, b) => a[1] - b[1])[0][0];
-            
-            const foundIndex = updatedStops.findIndex(s => s.id === stop.id);
-            if (foundIndex !== -1) {
-              updatedStops[foundIndex] = {
-                ...updatedStops[foundIndex],
-                driverId,
-                status: 'assigned' as const
-              };
-              
-              stopsToUpdate.push({ id: stop.id, driverId });
-              
-              driverLoads[driverId]++;
-            }
-          });
-        });
-        
-        setTimeout(() => {
-          console.log(`Auto-assigned ${stopsToUpdate.length} stops, updating database...`);
-          
-          Promise.all(stopsToUpdate.map(({ id, driverId }) => {
-            console.log(`Updating stop ${id} in database: driver_id=${driverId}, status=assigned`);
-            return supabase
-              .from('delivery_stops')
-              .update({
-                driver_id: driverId,
-                status: 'assigned',
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', id)
-              .eq('user_id', user.id)
-              .then(({ error }) => {
-                if (error) {
-                  console.error(`Error updating stop ${id}:`, error);
-                  throw error;
-                } else {
-                  console.log(`Successfully updated stop ${id} in database`);
-                }
-              });
-          }))
-          .then(() => {
-            toast({
-              title: "Auto-Assignment Complete",
-              description: `${stopsToUpdate.length} stops have been assigned and saved to the database.`,
-            });
-          })
-          .catch((error) => {
-            console.error('Error during batch update:', error);
-            toast({
-              title: "Database Update Partially Failed",
-              description: "Some stops may not have been updated in the database.",
-              variant: "destructive",
-            });
-          })
-          .finally(() => {
-            setIsLoading(false);
-          });
-        }, 0);
-        
-        return {
-          ...prev,
-          stops: updatedStops
-        };
-      });
-    }, 800);
-  };
-
-  const saveSchedule = () => {
-    try {
-      localStorage.setItem('catering-schedule', JSON.stringify(scheduleDay));
-      
-      setTimeout(() => {
-        toast({
-          title: "Schedule Saved",
-          description: "Your schedule has been saved successfully to local storage.",
-        });
-      }, 0);
-    } catch (error) {
-      console.error('Error saving schedule:', error);
-      
-      setTimeout(() => {
-        toast({
-          title: "Error Saving Schedule",
-          description: "There was an error saving your schedule. Please try again.",
-          variant: "destructive",
-        });
-      }, 0);
-    }
-  };
-
-  const loadSavedSchedule = () => {
-    try {
-      const savedSchedule = localStorage.getItem('catering-schedule');
-      if (savedSchedule) {
-        const parsed = JSON.parse(savedSchedule);
-        
-        if (!parsed.driverAvailability) {
-          parsed.driverAvailability = [];
-        }
-        
-        setScheduleDay(parsed);
-      }
-    } catch (error) {
-      console.error('Error loading saved schedule:', error);
-    }
-  };
-
-  const importCsvData = async (data: any[]) => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "You must be logged in to import data.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsLoading(true);
-    
-    try {
-      if (!data || data.length === 0) {
-        throw new Error("No valid data to import");
-      }
-      
-      console.log(`Preparing to import ${data.length} deliveries:`, data[0]);
-      
-      const newStops: DeliveryStop[] = data.map((row) => {
-        const newStopId = uuidv4();
-        
-        return {
-          id: newStopId,
-          businessName: row.businessName || '',
-          clientName: row.clientName || '',
-          address: row.address || '',
-          deliveryTime: row.deliveryTime || '12:00',
-          deliveryDate: row.deliveryDate || currentDateString,
-          status: 'unassigned' as const,
-          orderNumber: row.orderNumber || '',
-          contactPhone: row.contactPhone || '',
-          specialInstructions: row.specialInstructions || '',
-          items: row.items ? (typeof row.items === 'string' ? [row.items] : row.items) : [],
-          stopType: 'delivery' as const,
-          orderId: row.orderId || null,
-        };
-      });
-      
-      console.log(`Mapped ${newStops.length} stops for database insert`);
-      
-      const dbStops = newStops.map(stop => ({
-        id: stop.id,
-        user_id: user.id,
-        business_name: stop.businessName,
-        client_name: stop.clientName || null,
-        address: stop.address,
-        delivery_time: stop.deliveryTime,
-        delivery_date: stop.deliveryDate,
-        special_instructions: stop.specialInstructions || null,
-        status: 'unassigned',
-        driver_id: null,
-        order_number: stop.orderNumber || null,
-        contact_phone: stop.contactPhone || null,
-        stop_type: stop.stopType,
-        order_id: stop.orderId || null,
-      }));
-      
-      console.log(`Inserting ${dbStops.length} stops into database`);
-      
-      const { data: responseData, error } = await supabase
-        .from('delivery_stops')
-        .insert(dbStops)
-        .select();
-      
-      if (error) {
-        console.error("Supabase insert error:", error);
-        throw error;
-      }
-      
-      console.log(`Successfully inserted ${responseData?.length || 0} stops`);
-      
-      setScheduleDay(prev => ({
-        ...prev,
-        stops: [...prev.stops, ...newStops],
-      }));
-      
-      const importedDate = newStops[0]?.deliveryDate;
-      const isDateDifferent = importedDate && importedDate !== currentDateString;
-      
-      if (isDateDifferent) {
-        toast({
-          title: "Import Successful - Different Date",
-          description: `${newStops.length} stops were imported for ${importedDate}. You are currently viewing ${currentDateString}.`,
-          variant: "warning",
-        });
-      } else {
-        toast({
-          title: "CSV Import Complete",
-          description: `${newStops.length} stops have been imported and saved to the database.`,
-        });
-      }
-    } catch (error) {
-      console.error('Error importing CSV data:', error);
-      toast({
-        title: "Import Failed",
-        description: `Failed to import CSV data: ${(error as Error).message}`,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const editStop = (stopId: string) => {
-    const stop = scheduleDay.stops.find(s => s.id === stopId);
-    if (stop) {
-      editStopEventChannel.dispatchEvent(new CustomEvent('editStop', { detail: stop }));
-    }
-  };
-
-  const duplicateStop = async (stopId: string) => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "You must be logged in to duplicate stops.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const stopToDuplicate = scheduleDay.stops.find(stop => stop.id === stopId);
-    
-    if (!stopToDuplicate) {
-      return;
-    }
-    
-    const newStopId = uuidv4();
-    
-    const duplicatedStop: DeliveryStop = {
-      ...stopToDuplicate,
-      id: newStopId,
-      status: 'unassigned',
-      driverId: undefined,
-      orderNumber: stopToDuplicate.orderNumber ? `${stopToDuplicate.orderNumber}-copy` : undefined,
-      orderId: stopToDuplicate.orderId ? `${stopToDuplicate.orderId}-copy` : undefined,
-    };
-    
-    try {
-      const { error } = await supabase
-        .from('delivery_stops')
-        .insert({
-          id: newStopId,
-          user_id: user.id,
-          business_name: stopToDuplicate.businessName,
-          client_name: stopToDuplicate.clientName || null,
-          address: stopToDuplicate.address,
-          delivery_time: stopToDuplicate.deliveryTime,
-          delivery_date: stopToDuplicate.deliveryDate,
-          special_instructions: stopToDuplicate.specialInstructions || null,
-          status: 'unassigned',
-          driver_id: null,
-          order_number: duplicatedStop.orderNumber || null,
-          contact_phone: stopToDuplicate.contactPhone || null,
-          stop_type: stopToDuplicate.stopType,
-          order_id: duplicatedStop.orderId || null,
-        });
-
-      if (error) throw error;
-      
-      setScheduleDay(prev => ({
-        ...prev,
-        stops: [...prev.stops, duplicatedStop],
-      }));
-      
-      toast({
-        title: "Stop Duplicated",
-        description: "A copy of the stop has been created and added to unassigned stops.",
-      });
-    } catch (error) {
-      console.error('Error duplicating stop in database:', error);
-      toast({
-        title: "Database Duplication Failed",
-        description: "Failed to duplicate the stop in the database.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  return (
-    <ScheduleContext.Provider value={{
-      scheduleDay,
-      addDriver,
-      removeDriver,
-      updateDriver,
-      addStop,
-      updateStop,
-      removeStop,
-      assignStop,
-      unassignStop,
-      autoAssignStops,
-      saveSchedule,
-      loadSavedSchedule,
-      importCsvData,
-      isLoading,
-      editStop,
-      duplicateStop,
-      getStopsForDate,
-      syncDriversWithDatabase,
-      syncStopsWithDatabase,
-      updateDriverAvailability
-    }}>
-      {children}
-    </ScheduleContext.Provider>
-  );
-};
-
-export const useSchedule = () => {
-  const context = useContext(ScheduleContext);
-  if (context === undefined) {
-    throw new Error('useSchedule must be used within a ScheduleProvider');
-  }
-  return context;
-};
-
-export { editStopEventChannel };
+      const { error } = await su

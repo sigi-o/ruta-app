@@ -20,8 +20,10 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
   const [isVerified, setIsVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("preview");
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [warningMessage, setWarningMessage] = useState<string | null>(null);
   const { importCsvData } = useSchedule();
-  const { toast } = useToast();
+  const { errorToast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -29,6 +31,8 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
       setFile(selectedFile);
       setIsVerified(false);
       setCsvData(null);
+      setSuccessMessage(null);
+      setWarningMessage(null);
     }
   };
 
@@ -50,10 +54,9 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
           setActiveTab("preview");
         } else {
           // Only show error if no deliveries were found
-          toast({
+          errorToast({
             title: "CSV Import Error",
             description: "There was an error in your file, stops could not be uploaded.",
-            variant: "destructive",
           });
           
           if (parsedData.errors.length > 0) {
@@ -63,10 +66,9 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
         
       } catch (error) {
         console.error("Error parsing CSV", error);
-        toast({
+        errorToast({
           title: "CSV Import Error",
           description: "There was an error in your file, stops could not be uploaded.",
-          variant: "destructive",
         });
         setCsvData(null);
       } finally {
@@ -75,10 +77,9 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
     };
     
     reader.onerror = () => {
-      toast({
+      errorToast({
         title: "CSV Import Error",
         description: "There was an error in your file, stops could not be uploaded.",
-        variant: "destructive",
       });
       setIsLoading(false);
     };
@@ -92,6 +93,14 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
     console.log(`Importing ${csvData.deliveries.length} deliveries with date ${csvData.reportDate}`);
     
     importCsvData(csvData.deliveries);
+    
+    const importedDate = csvData.deliveries[0]?.deliveryDate;
+    
+    if (importedDate && importedDate !== csvData.reportDate) {
+      setWarningMessage(`${csvData.deliveries.length} stops were imported for ${importedDate}. You are currently viewing ${csvData.reportDate}.`);
+    } else {
+      setSuccessMessage(`${csvData.deliveries.length} stops have been imported successfully.`);
+    }
     
     onClose();
     setFile(null);

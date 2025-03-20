@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,7 +13,7 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { errorToast } = useToast();
 
   useEffect(() => {
     // Check if user is already logged in
@@ -44,10 +43,9 @@ const Auth = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast({
+      errorToast({
         title: "Error",
         description: "Please fill in all fields",
-        variant: "destructive",
       });
       return;
     }
@@ -61,16 +59,12 @@ const Auth = () => {
 
       if (error) throw error;
       
-      toast({
-        title: "Success",
-        description: "You have successfully logged in",
-      });
+      // Success login - no toast, just redirect
       
     } catch (error: any) {
-      toast({
+      errorToast({
         title: "Error signing in",
         description: error.message,
-        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -80,10 +74,9 @@ const Auth = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast({
+      errorToast({
         title: "Error",
         description: "Please fill in all fields",
-        variant: "destructive",
       });
       return;
     }
@@ -102,16 +95,18 @@ const Auth = () => {
 
       if (error) throw error;
       
-      toast({
-        title: "Success",
-        description: "Registration successful! Please check your email for the confirmation link.",
-      });
+      // Success notification replaced with inline message
+      setLoading(false);
+      return (
+        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md text-green-800">
+          Registration successful! Please check your email for the confirmation link.
+        </div>
+      );
       
     } catch (error: any) {
-      toast({
+      errorToast({
         title: "Error signing up",
         description: error.message,
-        variant: "destructive",
       });
     } finally {
       setLoading(false);

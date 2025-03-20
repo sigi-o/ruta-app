@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSchedule, editStopEventChannel } from '@/context/ScheduleContext';
 import { useDateSystem } from '@/context/DateContext';
@@ -26,7 +25,7 @@ const UnassignedStopsPanel: React.FC = () => {
     deliveryDate: currentDateString,
     stopType: 'delivery',
   });
-  const { toast } = useToast();
+  const { errorToast } = useToast();
 
   const unassignedStops = scheduleDay.stops.filter(stop => 
     stop.status === 'unassigned' && stop.deliveryDate === currentDateString
@@ -102,10 +101,9 @@ const UnassignedStopsPanel: React.FC = () => {
       updateStop(currentStop.id, currentStop);
       
       if (currentStop.deliveryDate !== currentDateString) {
-        toast({
+        errorToast({
           title: "Date Changed",
           description: `This stop will be moved to ${currentStop.deliveryDate}, which is different from the current view.`,
-          variant: "destructive"
         });
       }
       

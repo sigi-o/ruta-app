@@ -1,3 +1,4 @@
+
 import * as React from "react"
 
 import type {
@@ -6,7 +7,7 @@ import type {
 } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+const TOAST_REMOVE_DELAY = 5000 // Reducing this from 1000000 to a more reasonable 5 seconds
 
 type ToasterToast = ToastProps & {
   id: string
@@ -91,8 +92,6 @@ export const reducer = (state: State, action: Action): State => {
     case "DISMISS_TOAST": {
       const { toastId } = action
 
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
       if (toastId) {
         addToRemoveQueue(toastId)
       } else {
@@ -140,9 +139,11 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">
 
-function toast({ ...props }: Toast) {
+// New function to handle errors only
+function errorToast(props: Toast) {
   const id = genId()
-
+  const variant = "destructive"
+  
   const update = (props: ToasterToast) =>
     dispatch({
       type: "UPDATE_TOAST",
@@ -155,6 +156,7 @@ function toast({ ...props }: Toast) {
     toast: {
       ...props,
       id,
+      variant,
       open: true,
       onOpenChange: (open) => {
         if (!open) dismiss()
@@ -167,6 +169,12 @@ function toast({ ...props }: Toast) {
     dismiss,
     update,
   }
+}
+
+// Original toast function remains but is deprecated
+function toast({ ...props }: Toast) {
+  console.warn("DEPRECATED: Use errorToast for errors only. Other notifications are being phased out.")
+  return errorToast(props)
 }
 
 function useToast() {
@@ -185,8 +193,9 @@ function useToast() {
   return {
     ...state,
     toast,
+    errorToast,
     dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
   }
 }
 
-export { useToast, toast }
+export { useToast, toast, errorToast }
