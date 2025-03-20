@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { Driver, DeliveryStop, TimeSlot, ScheduleDay, DriverAvailability } from '@/types';
 import { generateTimeSlots } from '@/lib/utils';
@@ -871,4 +872,347 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       updatedFields.updated_at = new Date().toISOString();
 
       console.log(`Updating stop in database: ${stopId} with fields:`, updatedFields);
-      const { error } = await su
+      const { error } = await supabase
+        .from('delivery_stops')
+        .update(updatedFields)
+        .eq('id', stopId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      console.log(`Stop ${stopId} updated successfully in database.`);
+    } catch (error) {
+      console.error('Error updating stop in database:', error);
+      errorToast({
+        title: "Error Updating Stop",
+        description: "Failed to update stop in the database.",
+      });
+    }
+  };
+
+  const removeStop = async (stopId: string) => {
+    if (!user) {
+      errorToast({
+        title: "Authentication Required",
+        description: "You must be logged in to remove stops.",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('delivery_stops')
+        .delete()
+        .eq('id', stopId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setScheduleDay(prev => ({
+        ...prev,
+        stops: prev.stops.filter(s => s.id !== stopId),
+      }));
+
+      console.log(`Stop ${stopId} removed successfully.`);
+    } catch (error) {
+      console.error('Error removing stop from database:', error);
+      errorToast({
+        title: "Error Removing Stop",
+        description: "Failed to remove stop from the database.",
+      });
+    }
+  };
+
+  const assignStop = async (stopId: string, driverId: string) => {
+    if (!user) {
+      errorToast({
+        title: "Authentication Required",
+        description: "You must be logged in to assign stops to drivers.",
+      });
+      return;
+    }
+
+    // Get the stop to determine its date
+    const stop = scheduleDay.stops.find(s => s.id === stopId);
+    if (!stop) {
+      console.error(`Stop ${stopId} not found in schedule.`);
+      return;
+    }
+
+    // Check if the driver is available for the stop's date
+    const driverAvailabilityRecord = scheduleDay.driverAvailability.find(
+      a => a.driverId === driverId && a.date === stop.deliveryDate
+    );
+    
+    if (driverAvailabilityRecord && !driverAvailabilityRecord.isAvailable) {
+      errorToast({
+        title: "Driver Unavailable",
+        description: `This driver is marked as unavailable on ${stop.deliveryDate}.`,
+      });
+      return;
+    }
+
+    setScheduleDay(prev => ({
+      ...prev,
+      stops: prev.stops.map(s => 
+        s.id === stopId ? { ...s, driverId, status: 'assigned' as const } : s
+      ),
+    }));
+
+    try {
+      const { error } = await supabase
+        .from('delivery_stops')
+        .update({
+          driver_id: driverId,
+          status: 'assigned',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', stopId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      console.log(`Stop ${stopId} assigned to driver ${driverId}.`);
+    } catch (error) {
+      console.error('Error assigning stop in database:', error);
+      errorToast({
+        title: "Error Assigning Stop",
+        description: "Failed to assign stop to driver in the database.",
+      });
+    }
+  };
+
+  const unassignStop = async (stopId: string) => {
+    if (!user) {
+      errorToast({
+        title: "Authentication Required",
+        description: "You must be logged in to unassign stops.",
+      });
+      return;
+    }
+
+    setScheduleDay(prev => ({
+      ...prev,
+      stops: prev.stops.map(s => 
+        s.id === stopId ? { ...s, driverId: undefined, status: 'unassigned' as const } : s
+      ),
+    }));
+
+    try {
+      const { error } = await supabase
+        .from('delivery_stops')
+        .update({
+          driver_id: null,
+          status: 'unassigned',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', stopId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      console.log(`Stop ${stopId} unassigned.`);
+    } catch (error) {
+      console.error('Error unassigning stop in database:', error);
+      errorToast({
+        title: "Error Unassigning Stop",
+        description: "Failed to unassign stop in the database.",
+      });
+    }
+  };
+
+  const autoAssignStops = async () => {
+    if (!user) {
+      errorToast({
+        title: "Authentication Required",
+        description: "You must be logged in to auto-assign stops.",
+      });
+      return;
+    }
+
+    // Get only stops for current date
+    const currentDateStops = scheduleDay.stops.filter(stop => 
+      stop.status === 'unassigned' && stop.deliveryDate === currentDateString
+    );
+    
+    if (currentDateStops.length === 0) {
+      console.log("No unassigned stops found for the current date to auto-assign.");
+      return;
+    }
+
+    // Get only available drivers for current date
+    const availableDrivers = scheduleDay.drivers.filter(driver => {
+      const availabilityRecord = scheduleDay.driverAvailability.find(
+        a => a.driverId === driver.id && a.date === currentDateString
+      );
+      return availabilityRecord ? availabilityRecord.isAvailable : true;
+    });
+
+    if (availableDrivers.length === 0) {
+      errorToast({
+        title: "No Available Drivers",
+        description: "There are no available drivers for the current date.",
+      });
+      return;
+    }
+
+    // Sort stops by delivery time
+    const sortedStops = [...currentDateStops].sort((a, b) => {
+      return a.deliveryTime.localeCompare(b.deliveryTime);
+    });
+
+    // Distribute stops among available drivers
+    for (let i = 0; i < sortedStops.length; i++) {
+      const driverIndex = i % availableDrivers.length;
+      const stop = sortedStops[i];
+      const driver = availableDrivers[driverIndex];
+      
+      await assignStop(stop.id, driver.id);
+    }
+
+    console.log(`Auto-assigned ${sortedStops.length} stops to ${availableDrivers.length} drivers.`);
+  };
+
+  const saveSchedule = () => {
+    try {
+      localStorage.setItem('schedule', JSON.stringify(scheduleDay));
+      console.log("Schedule saved to local storage.");
+    } catch (error) {
+      console.error('Error saving schedule to local storage:', error);
+      errorToast({
+        title: "Error Saving Schedule",
+        description: "Failed to save schedule to local storage.",
+      });
+    }
+  };
+
+  const loadSavedSchedule = () => {
+    try {
+      const savedSchedule = localStorage.getItem('schedule');
+      if (savedSchedule) {
+        const parsed = JSON.parse(savedSchedule) as ScheduleDay;
+        setScheduleDay(parsed);
+        console.log("Schedule loaded from local storage.");
+      }
+    } catch (error) {
+      console.error('Error loading schedule from local storage:', error);
+      errorToast({
+        title: "Error Loading Schedule",
+        description: "Failed to load schedule from local storage.",
+      });
+    }
+  };
+
+  const importCsvData = (data: any[]) => {
+    if (!Array.isArray(data) || data.length === 0) {
+      errorToast({
+        title: "Import Failed",
+        description: "No valid data found in the CSV file.",
+      });
+      return;
+    }
+    
+    try {
+      const newStops: Omit<DeliveryStop, 'id' | 'status'>[] = data.map(row => {
+        return {
+          businessName: row.businessName || row.business_name || "",
+          clientName: row.clientName || row.client_name || "",
+          address: row.address || "",
+          deliveryTime: row.deliveryTime || row.delivery_time || "12:00",
+          deliveryDate: row.deliveryDate || row.delivery_date || currentDateString,
+          orderNumber: row.orderNumber || row.order_number || "",
+          contactPhone: row.contactPhone || row.contact_phone || "",
+          specialInstructions: row.specialInstructions || row.special_instructions || "",
+          stopType: row.stopType || row.stop_type || "delivery",
+        };
+      });
+      
+      if (newStops.length > 0) {
+        // Add stops one by one
+        newStops.forEach(stop => {
+          addStop(stop);
+        });
+        
+        console.log(`Imported ${newStops.length} stops from CSV.`);
+        
+        if (newStops.some(s => s.deliveryDate !== currentDateString)) {
+          errorToast({
+            title: "Mixed Dates",
+            description: "Some imported stops have different dates than your current view.",
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error importing CSV data:', error);
+      errorToast({
+        title: "CSV Import Failed",
+        description: "Failed to process the CSV data.",
+      });
+    }
+  };
+
+  const duplicateStop = (stopId: string) => {
+    const stopToDuplicate = scheduleDay.stops.find(s => s.id === stopId);
+    if (!stopToDuplicate) return;
+    
+    const duplicatedStop: Omit<DeliveryStop, 'id' | 'status'> = {
+      businessName: stopToDuplicate.businessName,
+      clientName: stopToDuplicate.clientName,
+      address: stopToDuplicate.address,
+      deliveryTime: stopToDuplicate.deliveryTime,
+      deliveryDate: stopToDuplicate.deliveryDate,
+      specialInstructions: stopToDuplicate.specialInstructions,
+      orderNumber: `${stopToDuplicate.orderNumber || ''} (Copy)`,
+      contactPhone: stopToDuplicate.contactPhone,
+      stopType: stopToDuplicate.stopType,
+      orderId: stopToDuplicate.orderId,
+    };
+    
+    addStop(duplicatedStop);
+    console.log(`Stop duplicated: ${stopToDuplicate.businessName}`);
+  };
+
+  const editStop = (stopId: string) => {
+    const stop = scheduleDay.stops.find(s => s.id === stopId);
+    if (stop) {
+      editStopEventChannel.dispatchEvent(new CustomEvent('editStop', { detail: stop }));
+    }
+  };
+
+  return (
+    <ScheduleContext.Provider
+      value={{
+        scheduleDay,
+        addDriver,
+        removeDriver,
+        updateDriver,
+        addStop,
+        updateStop,
+        removeStop,
+        assignStop,
+        unassignStop,
+        autoAssignStops,
+        saveSchedule,
+        loadSavedSchedule,
+        importCsvData,
+        isLoading,
+        editStop,
+        duplicateStop,
+        getStopsForDate,
+        syncDriversWithDatabase,
+        syncStopsWithDatabase,
+        updateDriverAvailability,
+      }}
+    >
+      {children}
+    </ScheduleContext.Provider>
+  );
+};
+
+export const useSchedule = (): ScheduleContextType => {
+  const context = useContext(ScheduleContext);
+  if (context === undefined) {
+    throw new Error('useSchedule must be used within a ScheduleProvider');
+  }
+  return context;
+};
