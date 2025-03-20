@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { ScheduleProvider } from '@/context/ScheduleContext';
 import { DateProvider, useDateSystem } from '@/context/DateContext';
@@ -12,7 +13,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { CalendarIcon, Upload, Printer, LogOut } from 'lucide-react';
-import { useSchedule } from '@/hooks/useSchedule';
+import { useSchedule } from '@/context/ScheduleContext';
 
 const ScheduleManager: React.FC = () => {
   const { currentDate, currentDateString, setCurrentDate, isDateValid } = useDateSystem();

@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { useSchedule } from '@/hooks/useSchedule';
+import { useSchedule } from '@/context/ScheduleContext';
 import { useDateSystem } from '@/context/DateContext';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
