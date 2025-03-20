@@ -1,5 +1,6 @@
 
 import { Driver, DeliveryStop, TimeSlot, ScheduleDay, DriverAvailability } from '@/types';
+import { generateTimeSlots } from '@/lib/utils';
 
 export interface ScheduleContextType {
   scheduleDay: ScheduleDay;
