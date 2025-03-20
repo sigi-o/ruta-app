@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { Driver, DeliveryStop, TimeSlot, ScheduleDay, DriverAvailability } from '@/types';
 import { generateTimeSlots } from '@/lib/utils';
@@ -111,7 +110,7 @@ const emptyScheduleDay: ScheduleDay = {
 
 export const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined);
 
-const editStopEventChannel = new EventTarget();
+export const editStopEventChannel = new EventTarget();
 
 export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentDateString } = useDateSystem();
