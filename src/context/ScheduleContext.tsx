@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { Driver, DeliveryStop, TimeSlot, ScheduleDay, DriverAvailability } from '@/types';
 import { generateTimeSlots } from '@/lib/utils';
@@ -294,7 +295,9 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         };
       });
       
+      // Only unassign stops for this specific date if the driver is now unavailable
       if (!isAvailable) {
+        // Filter stops to only include those for this specific date
         const stopsToUnassign = scheduleDay.stops.filter(
           stop => stop.driverId === driverId && stop.deliveryDate === date
         );
@@ -752,16 +755,23 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (error) throw error;
 
       setScheduleDay(prev => {
+        // Only unassign stops for the current date if the driver is marked unavailable
         let updatedStops = [...prev.stops];
         
         if (updatedDriver.available === false) {
+          // If general availability is set to false, also create/update a driver_availability record for current date
+          updateDriverAvailability(driverId, currentDateString, false);
+          
+          // Only unassign stops for the current date
           updatedStops = prev.stops.map(stop => 
-            stop.driverId === driverId ? { ...stop, driverId: undefined, status: 'unassigned' as const } : stop
+            stop.driverId === driverId && stop.deliveryDate === currentDateString 
+              ? { ...stop, driverId: undefined, status: 'unassigned' as const } 
+              : stop
           );
           
           toast({
             title: "Driver Marked Unavailable",
-            description: "All stops assigned to this driver have been unassigned.",
+            description: `All stops for today (${currentDateString}) assigned to this driver have been unassigned.`,
           });
         }
 
@@ -1475,4 +1485,3 @@ export const useSchedule = () => {
 };
 
 export { editStopEventChannel };
-
