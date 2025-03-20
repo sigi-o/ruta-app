@@ -85,6 +85,7 @@ const ScheduleManager: React.FC = () => {
           drivers={scheduleDay.drivers} 
           stops={scheduleDay.stops}
           selectedDate={currentDateString}
+          driverAvailability={scheduleDay.driverAvailability}
         />
       </div>
     );

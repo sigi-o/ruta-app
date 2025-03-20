@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { DeliveryStop, Driver } from '@/types';
+import { DeliveryStop, Driver, DriverAvailability } from '@/types';
 import { format, parse } from 'date-fns';
 import { Package, ShoppingBag, AlertCircle } from 'lucide-react';
 
@@ -8,16 +8,34 @@ interface PrintableScheduleProps {
   drivers: Driver[];
   stops: DeliveryStop[];
   selectedDate: string;
+  driverAvailability?: DriverAvailability[];
 }
 
 const PrintableSchedule: React.FC<PrintableScheduleProps> = ({ 
   drivers, 
   stops, 
-  selectedDate 
+  selectedDate,
+  driverAvailability = []
 }) => {
+  // Helper function to check if a driver is available on the selected date
+  const isDriverAvailableOnDate = (driverId: string): boolean => {
+    // First check if there's a specific availability record for this date
+    const availabilityRecord = driverAvailability.find(
+      a => a.driverId === driverId && a.date === selectedDate
+    );
+    
+    if (availabilityRecord) {
+      return availabilityRecord.isAvailable;
+    }
+    
+    // If no record exists, fall back to the driver's general availability
+    const driver = drivers.find(d => d.id === driverId);
+    return driver?.available !== false;
+  };
+
   // Get all drivers with their associated stops for the day
   const driversWithStops = drivers
-    .filter(driver => driver.available !== false)
+    .filter(driver => isDriverAvailableOnDate(driver.id))
     .map(driver => {
       const driverStops = stops
         .filter(stop => stop.driverId === driver.id && stop.deliveryDate === selectedDate)
@@ -85,6 +103,12 @@ const PrintableSchedule: React.FC<PrintableScheduleProps> = ({
         return <AlertCircle className="h-3 w-3 inline mr-1" />;
     }
   };
+
+  // Debug information
+  console.log(`PrintableSchedule: Found ${driversWithStops.length} available drivers for date ${selectedDate}`);
+  driversWithStops.forEach(ds => {
+    console.log(`PrintableSchedule: Driver ${ds.driver.name} has ${ds.stops.length} stops`);
+  });
 
   return (
     <div className="print-container p-2 max-w-full">
