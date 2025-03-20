@@ -133,6 +133,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             drivers: defaultDrivers,
             stops: defaultStops,
             timeSlots: defaultTimeSlots,
+            driverAvailability: [],
           });
         }
       }
@@ -1245,7 +1246,13 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       const savedSchedule = localStorage.getItem('catering-schedule');
       if (savedSchedule) {
-        setScheduleDay(JSON.parse(savedSchedule));
+        const parsed = JSON.parse(savedSchedule);
+        
+        if (!parsed.driverAvailability) {
+          parsed.driverAvailability = [];
+        }
+        
+        setScheduleDay(parsed);
       }
     } catch (error) {
       console.error('Error loading saved schedule:', error);
@@ -1468,3 +1475,4 @@ export const useSchedule = () => {
 };
 
 export { editStopEventChannel };
+
