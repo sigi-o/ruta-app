@@ -24,6 +24,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "group toast group-[.toaster]:bg-yellow-100 group-[.toaster]:text-yellow-800 group-[.toaster]:border-yellow-300 group-[.toaster]:shadow-lg",
         },
       }}
+      // Disable all toasts by setting the maximum number to 0
+      richColors={false}
+      visibleToasts={0}
+      position="bottom-right"
       {...props}
     />
   )

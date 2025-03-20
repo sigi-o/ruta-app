@@ -1,32 +1,18 @@
+
 import { useToast } from "@/hooks/use-toast"
 import {
-  Toast,
-  ToastClose,
-  ToastDescription,
   ToastProvider,
-  ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast"
 
 export function Toaster() {
+  // We're still using useToast to maintain the API,
+  // but the toasts array will always be empty
   const { toasts } = useToast()
 
   return (
     <ToastProvider>
-      {toasts.map(function ({ id, title, description, action, ...props }) {
-        return (
-          <Toast key={id} {...props}>
-            <div className="grid gap-1">
-              {title && <ToastTitle>{title}</ToastTitle>}
-              {description && (
-                <ToastDescription>{description}</ToastDescription>
-              )}
-            </div>
-            {action}
-            <ToastClose />
-          </Toast>
-        )
-      })}
+      {/* No toasts will be rendered since the toasts array is always empty */}
       <ToastViewport />
     </ToastProvider>
   )
