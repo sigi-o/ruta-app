@@ -1,77 +1,66 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Driver, DriverAvailability } from '@/types';
-import { useToast } from '@/hooks/use-toast';
-import { v4 as uuidv4 } from 'uuid';
+import { toast } from '@/components/ui/use-toast';
 
-const { errorToast } = useToast();
-
-export const fetchDriversFromDatabase = async (userId: string) => {
+// Export a function to fetch drivers from the database
+export const fetchDriversFromDatabase = async (userId: string): Promise<Driver[]> => {
   try {
-    console.log('Fetching drivers from database for user:', userId);
     const { data, error } = await supabase
       .from('drivers')
       .select('*')
       .eq('user_id', userId);
-    
+
     if (error) {
-      throw error;
+      console.error('Error fetching drivers:', error);
+      toast({
+        title: "Failed to load drivers",
+        description: error.message,
+        variant: "destructive",
+      });
+      return [];
     }
-    
-    if (data && data.length > 0) {
-      console.log(`Found ${data.length} drivers in database`);
-      return data.map(dbDriver => ({
-        id: dbDriver.id,
-        name: dbDriver.name,
-        color: dbDriver.color,
-        vehicleType: dbDriver.vehicle_type || undefined,
-        phoneNumber: dbDriver.phone_number || undefined,
-        notes: dbDriver.notes || undefined,
-        available: dbDriver.available === null ? true : dbDriver.available,
-      }));
-    }
-    
-    console.log('No drivers found in database, using default empty array');
-    return [];
-  } catch (error) {
-    console.error('Error fetching drivers:', error);
-    errorToast({
-      title: "Error Loading Drivers",
-      description: "Failed to load drivers from the database.",
+
+    return data || [];
+  } catch (err) {
+    console.error('Exception fetching drivers:', err);
+    toast({
+      title: "Error loading drivers",
+      description: "An unexpected error occurred",
+      variant: "destructive",
     });
-    throw error;
+    return [];
   }
 };
 
-export const addDriverToDatabase = async (userId: string, driver: Omit<Driver, 'id'>, driverId: string) => {
+// Export a function to add a new driver to the database
+export const addDriverToDatabase = async (userId: string, driver: Omit<Driver, 'id'>, newDriverId: string): Promise<void> => {
   try {
     const { error } = await supabase
       .from('drivers')
-      .insert({
-        id: driverId,
-        user_id: userId,
-        name: driver.name,
-        color: driver.color,
-        vehicle_type: driver.vehicleType || null,
-        phone_number: driver.phoneNumber || null,
-        notes: driver.notes || null,
-        available: driver.available === undefined ? true : driver.available,
-      });
+      .insert([{ id: newDriverId, user_id: userId, ...driver }]);
 
-    if (error) throw error;
-    
-    return driverId;
-  } catch (error) {
-    console.error('Error adding driver to database:', error);
-    errorToast({
-      title: "Error Adding Driver",
-      description: "Failed to add driver to the database.",
+    if (error) {
+      console.error('Error adding driver:', error);
+      toast({
+        title: "Failed to add driver",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  } catch (err) {
+    console.error('Exception adding driver:', err);
+    toast({
+      title: "Error adding driver",
+      description: "An unexpected error occurred",
+      variant: "destructive",
     });
-    throw error;
+    throw err;
   }
 };
 
-export const removeDriverFromDatabase = async (userId: string, driverId: string) => {
+// Export a function to remove a driver from the database
+export const removeDriverFromDatabase = async (userId: string, driverId: string): Promise<void> => {
   try {
     const { error } = await supabase
       .from('drivers')
@@ -79,203 +68,228 @@ export const removeDriverFromDatabase = async (userId: string, driverId: string)
       .eq('id', driverId)
       .eq('user_id', userId);
 
-    if (error) throw error;
-    
-    return true;
-  } catch (error) {
-    console.error('Error removing driver from database:', error);
-    errorToast({
-      title: "Error Removing Driver",
-      description: "Failed to remove driver from the database.",
+    if (error) {
+      console.error('Error removing driver:', error);
+      toast({
+        title: "Failed to remove driver",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  } catch (err) {
+    console.error('Exception removing driver:', err);
+    toast({
+      title: "Error removing driver",
+      description: "An unexpected error occurred",
+      variant: "destructive",
     });
-    throw error;
+    throw err;
   }
 };
 
-export const updateDriverInDatabase = async (userId: string, driverId: string, updatedDriver: Partial<Driver>) => {
+// Export a function to update a driver in the database
+export const updateDriverInDatabase = async (userId: string, driverId: string, updatedDriver: Partial<Driver>): Promise<void> => {
   try {
     const { error } = await supabase
       .from('drivers')
-      .update({
-        name: updatedDriver.name,
-        color: updatedDriver.color,
-        vehicle_type: updatedDriver.vehicleType || null,
-        phone_number: updatedDriver.phoneNumber || null,
-        notes: updatedDriver.notes || null,
-        available: updatedDriver.available === undefined ? true : updatedDriver.available,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updatedDriver)
       .eq('id', driverId)
       .eq('user_id', userId);
 
-    if (error) throw error;
-    
-    return true;
-  } catch (error) {
-    console.error('Error updating driver in database:', error);
-    errorToast({
-      title: "Error Updating Driver",
-      description: "Failed to update driver in the database.",
+    if (error) {
+      console.error('Error updating driver:', error);
+      toast({
+        title: "Failed to update driver",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  } catch (err) {
+    console.error('Exception updating driver:', err);
+    toast({
+      title: "Error updating driver",
+      description: "An unexpected error occurred",
+      variant: "destructive",
     });
-    throw error;
+    throw err;
   }
 };
 
-export const syncDriversWithDatabase = async (userId: string, drivers: Driver[]) => {
+export const syncDriversWithDatabase = async (userId: string, drivers: Driver[]): Promise<void> => {
   try {
-    const { data: dbDrivers, error: fetchError } = await supabase
+    // Fetch existing drivers from the database
+    const { data: existingDrivers, error: fetchError } = await supabase
       .from('drivers')
       .select('id')
       .eq('user_id', userId);
-    
-    if (fetchError) throw fetchError;
-    
-    const dbDriverIds = new Set((dbDrivers || []).map(d => d.id));
-    
-    const driversToAdd = drivers.filter(d => !dbDriverIds.has(d.id));
-    const driversToUpdate = drivers.filter(d => dbDriverIds.has(d.id));
-    const driversToDelete = Array.from(dbDriverIds).filter(
-      id => !drivers.some(d => d.id === id)
-    );
-    
-    if (driversToAdd.length > 0) {
+
+    if (fetchError) {
+      console.error('Error fetching existing drivers:', fetchError);
+      toast({
+        title: "Failed to sync drivers",
+        description: fetchError.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const existingDriverIds = existingDrivers ? existingDrivers.map(driver => driver.id) : [];
+
+    // Identify drivers to insert and drivers to update
+    const driversToInsert = drivers.filter(driver => !existingDriverIds.includes(driver.id));
+    const driversToUpdate = drivers.filter(driver => existingDriverIds.includes(driver.id));
+
+    // Insert new drivers
+    if (driversToInsert.length > 0) {
+      const insertData = driversToInsert.map(driver => ({
+        id: driver.id,
+        user_id: userId,
+        ...driver,
+      }));
+
       const { error: insertError } = await supabase
         .from('drivers')
-        .insert(driversToAdd.map(driver => ({
-          id: driver.id,
-          user_id: userId,
-          name: driver.name,
-          color: driver.color,
-          vehicle_type: driver.vehicleType || null,
-          phone_number: driver.phoneNumber || null,
-          notes: driver.notes || null,
-          available: driver.available === undefined ? true : driver.available,
-        })));
-      
-      if (insertError) throw insertError;
+        .insert(insertData);
+
+      if (insertError) {
+        console.error('Error inserting drivers:', insertError);
+        toast({
+          title: "Failed to insert drivers",
+          description: insertError.message,
+          variant: "destructive",
+        });
+      }
     }
-    
-    for (const driver of driversToUpdate) {
-      const { error: updateError } = await supabase
-        .from('drivers')
-        .update({
-          name: driver.name,
-          color: driver.color,
-          vehicle_type: driver.vehicleType || null,
-          phone_number: driver.phoneNumber || null,
-          notes: driver.notes || null,
-          available: driver.available === undefined ? true : driver.available,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', driver.id)
-        .eq('user_id', userId);
-      
-      if (updateError) throw updateError;
+
+    // Update existing drivers
+    if (driversToUpdate.length > 0) {
+      for (const driver of driversToUpdate) {
+        const { error: updateError } = await supabase
+          .from('drivers')
+          .update({ ...driver })
+          .eq('id', driver.id)
+          .eq('user_id', userId);
+
+        if (updateError) {
+          console.error(`Error updating driver ${driver.id}:`, updateError);
+          toast({
+            title: "Failed to update driver",
+            description: updateError.message,
+            variant: "destructive",
+          });
+        }
+      }
     }
-    
-    if (driversToDelete.length > 0) {
-      const { error: deleteError } = await supabase
-        .from('drivers')
-        .delete()
-        .in('id', driversToDelete)
-        .eq('user_id', userId);
-      
-      if (deleteError) throw deleteError;
-    }
-    
-    console.log(`Sync Complete - Added: ${driversToAdd.length}, Updated: ${driversToUpdate.length}, Deleted: ${driversToDelete.length}`);
-    return true;
+
+    console.log('Drivers synced with database successfully.');
   } catch (error) {
     console.error('Error syncing drivers with database:', error);
-    errorToast({
-      title: "Sync Failed",
-      description: "Failed to synchronize drivers with the database.",
+    toast({
+      title: "Error syncing drivers",
+      description: "An unexpected error occurred",
+      variant: "destructive",
     });
-    throw error;
   }
 };
 
-export const fetchDriverAvailabilityForDate = async (userId: string, date: string) => {
+export const fetchDriverAvailabilityForDate = async (
+  userId: string,
+  date: string
+): Promise<DriverAvailability[]> => {
   try {
-    console.log(`Fetching driver availability for date: ${date}`);
-    
     const { data, error } = await supabase
       .from('driver_availability')
-      .select('id, driver_id, date, is_available')
+      .select('*')
+      .eq('user_id', userId)
       .eq('date', date);
-    
+
     if (error) {
-      throw error;
+      console.error('Error fetching driver availability:', error);
+      toast({
+        title: "Failed to load driver availability",
+        description: error.message,
+        variant: "destructive",
+      });
+      return [];
     }
-    
-    if (data) {
-      console.log(`Found ${data.length} driver availability records for date ${date}`);
-      
-      return data.map(item => ({
-        id: item.id,
-        driverId: item.driver_id,
-        date: item.date,
-        isAvailable: item.is_available
-      }));
-    }
-    
-    return [];
-  } catch (error) {
-    console.error('Error fetching driver availability:', error);
-    errorToast({
-      title: "Error Loading Driver Availability",
-      description: "Failed to load driver availability from the database.",
+
+    return data || [];
+  } catch (err) {
+    console.error('Exception fetching driver availability:', err);
+    toast({
+      title: "Error loading driver availability",
+      description: "An unexpected error occurred",
+      variant: "destructive",
     });
-    throw error;
+    return [];
   }
 };
 
-export const updateDriverAvailabilityInDb = async (userId: string, driverId: string, date: string, isAvailable: boolean) => {
+export const updateDriverAvailabilityInDb = async (
+  userId: string,
+  driverId: string,
+  date: string,
+  isAvailable: boolean
+): Promise<void> => {
   try {
-    console.log(`Updating availability for driver ${driverId} on ${date} to ${isAvailable}`);
-    
-    const { data: existingData, error: checkError } = await supabase
+    // Check if the record already exists
+    const { data: existingData, error: selectError } = await supabase
       .from('driver_availability')
       .select('id')
-      .eq('driver_id', driverId)
-      .eq('date', date)
-      .single();
-    
-    if (checkError && checkError.code !== 'PGRST116') {
-      throw checkError;
+      .eq('user_id', userId)
+      .eq('driverId', driverId)
+      .eq('date', date);
+
+    if (selectError) {
+      console.error('Error checking existing driver availability:', selectError);
+      toast({
+        title: "Failed to update driver availability",
+        description: selectError.message,
+        variant: "destructive",
+      });
+      return;
     }
-    
-    let result;
-    
-    if (existingData) {
-      result = await supabase
+
+    if (existingData && existingData.length > 0) {
+      // Update existing record
+      const { error: updateError } = await supabase
         .from('driver_availability')
-        .update({
-          is_available: isAvailable,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existingData.id);
-    } else {
-      result = await supabase
-        .from('driver_availability')
-        .insert({
-          driver_id: driverId,
-          date: date,
-          is_available: isAvailable
+        .update({ isAvailable })
+        .eq('user_id', userId)
+        .eq('driverId', driverId)
+        .eq('date', date);
+
+      if (updateError) {
+        console.error('Error updating driver availability:', updateError);
+        toast({
+          title: "Failed to update driver availability",
+          description: updateError.message,
+          variant: "destructive",
         });
+      }
+    } else {
+      // Insert new record
+      const { error: insertError } = await supabase
+        .from('driver_availability')
+        .insert([{ user_id: userId, driverId, date, isAvailable }]);
+
+      if (insertError) {
+        console.error('Error inserting driver availability:', insertError);
+        toast({
+          title: "Failed to set driver availability",
+          description: insertError.message,
+          variant: "destructive",
+        });
+      }
     }
-    
-    if (result.error) {
-      throw result.error;
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('Error updating driver availability:', error);
-    errorToast({
-      title: "Error Updating Availability",
-      description: "Failed to update driver availability in the database.",
+  } catch (err) {
+    console.error('Exception updating driver availability:', err);
+    toast({
+      title: "Error updating driver availability",
+      description: "An unexpected error occurred",
+      variant: "destructive",
     });
-    throw error;
   }
 };
