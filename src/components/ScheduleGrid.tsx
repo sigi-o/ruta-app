@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { useDateSystem } from '@/context/DateContext';
 import { format } from 'date-fns';
@@ -18,6 +18,8 @@ const ScheduleGrid: React.FC = () => {
   const [expandedStopId, setExpandedStopId] = useState<string | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
   const { toast } = useToast();
+  const scheduleBodyRef = useRef<HTMLDivElement>(null);
+  const initialScrollApplied = useRef<boolean>(false);
 
   const {
     draggingStop,
@@ -34,6 +36,66 @@ const ScheduleGrid: React.FC = () => {
     if (scheduleDay.timeSlots.length > 0) {
       console.log(`First time slot: ${scheduleDay.timeSlots[0]?.time} (${scheduleDay.timeSlots[0]?.label})`);
       console.log(`Last time slot: ${scheduleDay.timeSlots[scheduleDay.timeSlots.length - 1]?.time} (${scheduleDay.timeSlots[scheduleDay.timeSlots.length - 1]?.label})`);
+    }
+  }, [scheduleDay.timeSlots]);
+
+  // Scroll to 6AM on initial load
+  useEffect(() => {
+    if (
+      !initialScrollApplied.current && 
+      scheduleBodyRef.current && 
+      scheduleDay.timeSlots.length > 0
+    ) {
+      const scrollToSixAM = () => {
+        if (!scheduleBodyRef.current) return;
+        
+        // Find the index of the 6AM time slot
+        const sixAMIndex = scheduleDay.timeSlots.findIndex(slot => slot.time === '06:00' || slot.label === '6:00 AM');
+        
+        if (sixAMIndex !== -1) {
+          // Find all time row elements
+          const timeRows = scheduleBodyRef.current.querySelectorAll('.time-row');
+          
+          if (timeRows.length > 0 && sixAMIndex < timeRows.length) {
+            const targetRow = timeRows[sixAMIndex] as HTMLElement;
+            
+            if (targetRow) {
+              // Get the offset of the 6AM row
+              const offsetTop = targetRow.offsetTop;
+              
+              // Set the scroll position
+              scheduleBodyRef.current.scrollTop = offsetTop;
+              console.log(`Scrolled to 6AM row at position: ${offsetTop}px`);
+              
+              // Verify scroll was applied
+              setTimeout(() => {
+                if (scheduleBodyRef.current) {
+                  console.log(`Current scroll position: ${scheduleBodyRef.current.scrollTop}px`);
+                  
+                  // If scroll didn't work as expected, try again with calculation
+                  if (scheduleBodyRef.current.scrollTop < offsetTop - 10) {
+                    // Average height of each time row (typically ~40-45px)
+                    const avgRowHeight = 42; 
+                    const calculatedOffset = sixAMIndex * avgRowHeight;
+                    
+                    scheduleBodyRef.current.scrollTop = calculatedOffset;
+                    console.log(`Retry scroll with calculated offset: ${calculatedOffset}px`);
+                  }
+                }
+              }, 100);
+              
+              initialScrollApplied.current = true;
+            }
+          }
+        } else {
+          console.log("6AM time slot not found in the schedule");
+        }
+      };
+      
+      // Add a small delay to ensure the DOM is fully rendered
+      const scrollTimeout = setTimeout(scrollToSixAM, 200);
+      
+      return () => clearTimeout(scrollTimeout);
     }
   }, [scheduleDay.timeSlots]);
 
@@ -156,7 +218,7 @@ const ScheduleGrid: React.FC = () => {
         isNavigating={isNavigating}
       />
 
-      <div className="flex-grow overflow-auto">
+      <div className="flex-grow overflow-auto" ref={scheduleBodyRef}>
         <div className="schedule-container relative">
           <div className="sticky top-0 z-20 bg-white">
             <ScheduleHeader availableDrivers={availableDrivers} />
