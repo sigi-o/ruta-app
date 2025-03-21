@@ -1,13 +1,14 @@
 
 import { format } from 'date-fns';
-import { ParsedCsvData, CsvParseError, CsvParseWarning } from '@/types';
+import { ParsedCsvData, CsvParseError, CsvParseWarning, CsvParseDuplicate } from '@/types';
 
 /**
  * Parses a CSV file containing dispatch report data using fixed column positions
  * @param fileContent The content of the CSV file as a string
- * @returns Parsed data, including deliveries, errors, and warnings
+ * @param existingOrderIds Array of order IDs that already exist in the system
+ * @returns Parsed data, including deliveries, errors, warnings, and duplicates
  */
-export function parseDispatchCsv(fileContent: string): ParsedCsvData {
+export function parseDispatchCsv(fileContent: string, existingOrderIds: string[] = []): ParsedCsvData {
   const lines = fileContent.trim().split(/\r?\n/);
   
   if (lines.length < 4) {
@@ -20,7 +21,8 @@ export function parseDispatchCsv(fileContent: string): ParsedCsvData {
         row: 0,
         message: "CSV file does not contain enough rows. Expected at least 4 rows including headers."
       }],
-      warnings: []
+      warnings: [],
+      duplicates: []
     };
   }
 
@@ -31,6 +33,12 @@ export function parseDispatchCsv(fileContent: string): ParsedCsvData {
   const deliveries: Record<string, string>[] = [];
   const errors: CsvParseError[] = [];
   const warnings: CsvParseWarning[] = [];
+  const duplicates: CsvParseDuplicate[] = [];
+  
+  // Convert all existing order IDs to lowercase for case-insensitive comparison
+  const normalizedExistingOrderIds = existingOrderIds.map(id => 
+    id ? id.toLowerCase().trim() : ''
+  ).filter(id => id !== '');
   
   // Fixed column mapping as per requirements
   // Using zero-based indexing for array access
@@ -38,7 +46,7 @@ export function parseDispatchCsv(fileContent: string): ParsedCsvData {
     deliveryTime: 1,  // Column B
     clientName: 5,    // Column F
     businessName: 6,  // Column G
-    orderId: 7,       // Column H (new field for Order ID)
+    orderId: 7,       // Column H (Order ID field)
     address: 10,      // Column K
     phone: 11,        // Column L
     notes: 13,        // Column N
@@ -81,7 +89,21 @@ export function parseDispatchCsv(fileContent: string): ParsedCsvData {
       const deliveryTime = values.length > columnMap.deliveryTime ? cleanString(values[columnMap.deliveryTime] || '') : '';
       const notes = values.length > columnMap.notes ? cleanString(values[columnMap.notes] || '') : '';
       const orderNumber = values.length > columnMap.orderNumber ? cleanString(values[columnMap.orderNumber] || '') : '';
-      const orderId = values.length > columnMap.orderId ? cleanString(values[columnMap.orderId] || '') : ''; // Extract Order ID from Column H
+      const orderId = values.length > columnMap.orderId ? cleanString(values[columnMap.orderId] || '') : '';
+      
+      // Check for duplicate Order ID
+      const normalizedOrderId = orderId ? orderId.toLowerCase().trim() : '';
+      
+      if (normalizedOrderId && normalizedExistingOrderIds.includes(normalizedOrderId)) {
+        duplicates.push({
+          row: lineNumber,
+          message: `Order ID already exists in the system`,
+          field: 'orderId',
+          value: orderId,
+          orderId: normalizedOrderId
+        });
+        continue; // Skip this row
+      }
       
       // Validate required fields
       const missingFields: string[] = [];
@@ -125,6 +147,11 @@ export function parseDispatchCsv(fileContent: string): ParsedCsvData {
         stopType: 'delivery'
       });
       
+      // Add this Order ID to our list of existing IDs to catch duplicates within the same file
+      if (normalizedOrderId) {
+        normalizedExistingOrderIds.push(normalizedOrderId);
+      }
+      
     } catch (error) {
       console.error(`Error parsing row ${lineNumber}:`, error);
       errors.push({
@@ -135,6 +162,7 @@ export function parseDispatchCsv(fileContent: string): ParsedCsvData {
   }
   
   console.log(`Successfully parsed ${deliveries.length} deliveries from ${lines.length - 3} rows`);
+  console.log(`Skipped ${duplicates.length} duplicate entries based on Order ID`);
   
   return {
     reportDate,
@@ -143,6 +171,7 @@ export function parseDispatchCsv(fileContent: string): ParsedCsvData {
     successfulRows: deliveries.length,
     errors,
     warnings,
+    duplicates,
     columnMap
   };
 }

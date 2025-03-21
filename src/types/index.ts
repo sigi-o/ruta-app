@@ -1,4 +1,3 @@
-
 export interface Driver {
   id: string;
   name: string;
@@ -57,16 +56,6 @@ export interface ImportedCsvData {
   specialInstructions?: string;
 }
 
-export interface ParsedCsvData {
-  reportDate: string | null;
-  deliveries: Record<string, string>[];
-  totalRows: number;
-  successfulRows: number;
-  errors: CsvParseError[];
-  warnings: CsvParseWarning[];
-  columnMap?: Record<string, number>;
-}
-
 export interface CsvParseError {
   row: number;
   message: string;
@@ -80,6 +69,25 @@ export interface CsvParseWarning {
   field?: string;
   originalValue?: string;
   correctedValue?: string;
+}
+
+export interface CsvParseDuplicate {
+  row: number;
+  message: string;
+  field?: string;
+  value?: string;
+  orderId?: string;
+}
+
+export interface ParsedCsvData {
+  reportDate: string | null;
+  deliveries: Record<string, string>[];
+  totalRows: number;
+  successfulRows: number;
+  errors: CsvParseError[];
+  warnings: CsvParseWarning[];
+  duplicates: CsvParseDuplicate[];
+  columnMap?: Record<string, number>;
 }
 
 export interface CsvColumn {

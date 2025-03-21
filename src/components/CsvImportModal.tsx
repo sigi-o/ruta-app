@@ -2,12 +2,14 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { UploadCloud, AlertCircle, CheckCircle2, FileCheck } from "lucide-react";
+import { UploadCloud, AlertCircle, CheckCircle2, FileCheck, FileWarning } from "lucide-react";
 import { useSchedule } from '@/context/ScheduleContext';
 import { useToast } from '@/hooks/use-toast';
 import { parseDispatchCsv } from '@/utils/csvParser';
 import { ParsedCsvData } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 
 interface CsvImportModalProps {
   isOpen: boolean;
@@ -22,6 +24,7 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState("preview");
   const { importCsvData } = useSchedule();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -32,58 +35,86 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const verifyFile = () => {
-    if (!file) return;
+  const verifyFile = async () => {
+    if (!file || !user) return;
     
     setIsLoading(true);
-    const reader = new FileReader();
     
-    reader.onload = (e) => {
-      try {
-        const text = e.target?.result as string;
-        const parsedData = parseDispatchCsv(text);
-        
-        setCsvData(parsedData);
-        
-        if (parsedData.deliveries.length > 0) {
-          setIsVerified(true);
-          setActiveTab("preview");
-        } else {
-          // Only show error if no deliveries were found
+    try {
+      // First fetch existing order IDs from the database to check for duplicates
+      const { data: existingStops, error: fetchError } = await supabase
+        .from('delivery_stops')
+        .select('order_id')
+        .eq('user_id', user.id)
+        .not('order_id', 'is', null);
+      
+      if (fetchError) {
+        throw fetchError;
+      }
+      
+      const existingOrderIds = existingStops ? existingStops.map(stop => stop.order_id).filter(Boolean) : [];
+      console.log(`Found ${existingOrderIds.length} existing order IDs to check for duplicates`);
+      
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        try {
+          const text = e.target?.result as string;
+          const parsedData = parseDispatchCsv(text, existingOrderIds);
+          
+          setCsvData(parsedData);
+          
+          if (parsedData.deliveries.length > 0) {
+            setIsVerified(true);
+            setActiveTab("preview");
+          } else {
+            // Only show error if no deliveries were found
+            toast({
+              title: "CSV Import Error",
+              description: "There was an error in your file, stops could not be uploaded.",
+              variant: "destructive",
+            });
+            
+            if (parsedData.errors.length > 0) {
+              setActiveTab("errors");
+            } else if (parsedData.duplicates.length > 0) {
+              setActiveTab("duplicates");
+            }
+          }
+          
+        } catch (error) {
+          console.error("Error parsing CSV", error);
           toast({
             title: "CSV Import Error",
             description: "There was an error in your file, stops could not be uploaded.",
             variant: "destructive",
           });
-          
-          if (parsedData.errors.length > 0) {
-            setActiveTab("errors");
-          }
+          setCsvData(null);
+        } finally {
+          setIsLoading(false);
         }
-        
-      } catch (error) {
-        console.error("Error parsing CSV", error);
+      };
+      
+      reader.onerror = () => {
         toast({
           title: "CSV Import Error",
           description: "There was an error in your file, stops could not be uploaded.",
           variant: "destructive",
         });
-        setCsvData(null);
-      } finally {
         setIsLoading(false);
-      }
-    };
-    
-    reader.onerror = () => {
+      };
+      
+      reader.readAsText(file);
+      
+    } catch (error) {
+      console.error("Error fetching existing order IDs", error);
       toast({
-        title: "CSV Import Error",
-        description: "There was an error in your file, stops could not be uploaded.",
+        title: "Database Error",
+        description: "Could not check for duplicate orders. Please try again.",
         variant: "destructive",
       });
       setIsLoading(false);
-    };
-    
-    reader.readAsText(file);
+    }
   };
 
   const handleImport = () => {
@@ -120,6 +151,7 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
                 <th className="p-2 border">Address</th>
                 <th className="p-2 border">Time</th>
                 <th className="p-2 border">Client</th>
+                <th className="p-2 border">Order ID</th>
               </tr>
             </thead>
             <tbody>
@@ -129,6 +161,7 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
                   <td className="p-2 border">{record.address}</td>
                   <td className="p-2 border">{record.deliveryTime}</td>
                   <td className="p-2 border">{record.clientName}</td>
+                  <td className="p-2 border">{record.orderId || '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -189,6 +222,11 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
               {csvData && (
                 <div className="mt-1 text-xs text-gray-600">
                   {csvData.successfulRows} of {csvData.totalRows} records processed successfully
+                  {csvData.duplicates.length > 0 && (
+                    <span className="ml-2 text-amber-600">
+                      ({csvData.duplicates.length} duplicates found)
+                    </span>
+                  )}
                   {csvData.reportDate && (
                     <div className="mt-1">
                       <span className="font-medium">Report Date:</span> {csvData.reportDate}
@@ -219,8 +257,8 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
                 <TabsTrigger value="errors" disabled={csvData.errors.length === 0}>
                   Errors ({csvData.errors.length})
                 </TabsTrigger>
-                <TabsTrigger value="warnings" disabled={csvData.warnings.length === 0}>
-                  Warnings ({csvData.warnings.length})
+                <TabsTrigger value="duplicates" disabled={csvData.duplicates.length === 0}>
+                  Duplicates ({csvData.duplicates.length})
                 </TabsTrigger>
               </TabsList>
               
@@ -249,15 +287,15 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
                 )}
               </TabsContent>
               
-              <TabsContent value="warnings">
-                {csvData.warnings.length > 0 ? (
+              <TabsContent value="duplicates">
+                {csvData.duplicates.length > 0 ? (
                   <div className="max-h-40 overflow-y-auto text-xs p-2 border border-amber-200 rounded bg-amber-50">
                     <ul className="list-disc pl-4">
-                      {csvData.warnings.map((warning, index) => (
+                      {csvData.duplicates.map((duplicate, index) => (
                         <li key={index} className="text-amber-600 mb-1">
-                          Row {warning.row}: {warning.message}
-                          {warning.field ? ` (Field: ${warning.field})` : ''}
-                          {warning.correctedValue ? ` Corrected to: "${warning.correctedValue}"` : ''}
+                          Row {duplicate.row}: {duplicate.message}
+                          {duplicate.field ? ` (Field: ${duplicate.field})` : ''}
+                          {duplicate.value ? ` Value: "${duplicate.value}"` : ''}
                         </li>
                       ))}
                     </ul>
@@ -265,7 +303,7 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
                 ) : (
                   <div className="p-4 text-center text-green-600 bg-green-50 rounded">
                     <CheckCircle2 className="w-5 h-5 mx-auto mb-2" />
-                    No warnings found
+                    No duplicates found
                   </div>
                 )}
               </TabsContent>
@@ -282,6 +320,11 @@ const CsvImportModal: React.FC<CsvImportModalProps> = ({ isOpen, onClose }) => {
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               Import {csvData?.deliveries.length} Deliveries
+              {csvData && csvData.duplicates.length > 0 && (
+                <span className="ml-1 text-xs">
+                  (Skipping {csvData.duplicates.length} duplicates)
+                </span>
+              )}
             </Button>
           )}
         </DialogFooter>
