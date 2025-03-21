@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { ScheduleProvider } from '@/context/ScheduleContext';
 import { DateProvider, useDateSystem } from '@/context/DateContext';
@@ -59,8 +58,7 @@ const ScheduleManager: React.FC = () => {
       <div className="flex flex-col h-screen">
         <header className="bg-white p-4 text-blue-600 flex items-center justify-between shadow-sm print:hidden">
           <div>
-            <h1 className="text-2xl font-bold">Catering Flow Manager</h1>
-            <p className="text-blue-500/80">Streamlined delivery scheduling</p>
+            <h1 className="text-2xl font-bold italic">RUTA</h1>
           </div>
         </header>
         <div className="flex-grow flex items-center justify-center">
@@ -95,8 +93,7 @@ const ScheduleManager: React.FC = () => {
     <div className="flex flex-col h-screen">
       <header className="bg-white p-4 text-blue-600 flex items-center justify-between shadow-sm print:hidden">
         <div>
-          <h1 className="text-2xl font-bold">Catering Flow Manager</h1>
-          <p className="text-blue-500/80">Streamlined delivery scheduling</p>
+          <h1 className="text-2xl font-bold italic">RUTA</h1>
         </div>
         
         <div className="flex-1 flex justify-center">
