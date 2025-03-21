@@ -962,3 +962,256 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     try {
       const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(stopId);
+      
+      if (isValidUUID) {
+        const { error } = await supabase
+          .from('delivery_stops')
+          .delete()
+          .eq('id', stopId)
+          .eq('user_id', user.id);
+          
+        if (error) {
+          throw error;
+        }
+      } else {
+        console.error('Invalid UUID format for stopId:', stopId);
+      }
+    } catch (error) {
+      console.error('Error removing stop from database:', error);
+      toast({
+        title: "Database Error",
+        description: "The stop was removed locally but failed to delete from the database.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const assignStop = async (stopId: string, driverId: string) => {
+    const stop = scheduleDay.stops.find(s => s.id === stopId);
+    if (!stop) return;
+
+    const driver = scheduleDay.drivers.find(d => d.id === driverId);
+    if (!driver) return;
+
+    // Check if driver is available for this specific date
+    const driverAvailabilityRecord = scheduleDay.driverAvailability.find(
+      a => a.driverId === driverId && a.date === stop.deliveryDate
+    );
+    
+    // If we have a record saying the driver is unavailable for this date, don't assign
+    if (driverAvailabilityRecord && !driverAvailabilityRecord.isAvailable) {
+      toast({
+        title: "Driver Unavailable",
+        description: `${driver.name} is marked as unavailable for ${stop.deliveryDate}.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    updateStop(stopId, {
+      driverId,
+      status: 'assigned',
+    });
+  };
+
+  const unassignStop = async (stopId: string) => {
+    updateStop(stopId, {
+      driverId: undefined,
+      status: 'unassigned',
+    });
+  };
+
+  const editStop = (stopId: string) => {
+    const customEvent = new CustomEvent('editStop', { detail: { stopId } });
+    window.dispatchEvent(customEvent);
+  };
+
+  const duplicateStop = (stopId: string) => {
+    const stopToDuplicate = scheduleDay.stops.find(s => s.id === stopId);
+    if (!stopToDuplicate) return;
+
+    const { id, status, driverId, ...restOfStop } = stopToDuplicate;
+    addStop(restOfStop);
+  };
+
+  const autoAssignStops = () => {
+    const unassignedStops = scheduleDay.stops.filter(
+      stop => stop.status === 'unassigned' && stop.deliveryDate === currentDateString
+    );
+    
+    if (unassignedStops.length === 0) {
+      toast({
+        title: "No Unassigned Stops",
+        description: "There are no unassigned stops for the current date.",
+      });
+      return;
+    }
+
+    // Filter for available drivers on this specific date
+    const availableDriverIds = new Set();
+    
+    // First, add all drivers that are generally available
+    scheduleDay.drivers
+      .filter(driver => driver.available !== false)
+      .forEach(driver => availableDriverIds.add(driver.id));
+    
+    // Then, remove any drivers that are specifically unavailable for this date
+    scheduleDay.driverAvailability
+      .filter(record => record.date === currentDateString && !record.isAvailable)
+      .forEach(record => availableDriverIds.delete(record.driverId));
+    
+    const availableDrivers = scheduleDay.drivers.filter(
+      driver => availableDriverIds.has(driver.id)
+    );
+
+    if (availableDrivers.length === 0) {
+      toast({
+        title: "No Available Drivers",
+        description: "There are no available drivers for the current date.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Sort by time
+    const sortedStops = [...unassignedStops].sort((a, b) => {
+      return a.deliveryTime.localeCompare(b.deliveryTime);
+    });
+
+    // Simple round-robin assignment
+    let driverIndex = 0;
+    
+    for (const stop of sortedStops) {
+      const driverId = availableDrivers[driverIndex].id;
+      assignStop(stop.id, driverId);
+      driverIndex = (driverIndex + 1) % availableDrivers.length;
+    }
+
+    toast({
+      title: "Auto-Assignment Complete",
+      description: `${sortedStops.length} stops assigned to ${availableDrivers.length} drivers.`,
+    });
+  };
+
+  const saveSchedule = () => {
+    if (user) {
+      // When logged in, sync with the database instead of local storage
+      syncDriversWithDatabase();
+      syncStopsWithDatabase();
+      
+      toast({
+        title: "Schedule Synced",
+        description: "Your schedule has been synchronized with the database.",
+      });
+    } else {
+      try {
+        localStorage.setItem('savedSchedule', JSON.stringify(scheduleDay));
+        
+        toast({
+          title: "Schedule Saved",
+          description: "Your schedule has been saved to local storage.",
+        });
+      } catch (error) {
+        console.error('Error saving schedule to localStorage:', error);
+        
+        toast({
+          title: "Save Failed",
+          description: "Failed to save schedule to local storage.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const loadSavedSchedule = () => {
+    try {
+      const savedSchedule = localStorage.getItem('savedSchedule');
+      if (savedSchedule) {
+        const parsedSchedule = JSON.parse(savedSchedule) as ScheduleDay;
+        setScheduleDay(parsedSchedule);
+        
+        toast({
+          title: "Schedule Loaded",
+          description: "Your saved schedule has been loaded.",
+        });
+      }
+    } catch (error) {
+      console.error('Error loading schedule from localStorage:', error);
+      
+      toast({
+        title: "Load Failed",
+        description: "Failed to load schedule from local storage.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const importCsvData = (data: any[]) => {
+    if (!data || data.length === 0) return;
+    
+    const newStops = data.map(item => {
+      return {
+        businessName: item.businessName || '',
+        clientName: item.clientName || '',
+        address: item.address || '',
+        deliveryTime: item.deliveryTime || '12:00',
+        deliveryDate: item.deliveryDate || currentDateString,
+        specialInstructions: item.specialInstructions || '',
+        stopType: item.stopType || 'delivery',
+        orderNumber: item.orderNumber || '',
+        contactPhone: item.contactPhone || '',
+        items: item.items || [],
+        orderId: item.orderId || '',
+      } as Omit<DeliveryStop, 'id' | 'status'>;
+    });
+    
+    let addedCount = 0;
+    
+    for (const stop of newStops) {
+      addStop(stop);
+      addedCount++;
+    }
+    
+    toast({
+      title: "CSV Import Complete",
+      description: `${addedCount} stops have been added to the schedule.`,
+    });
+  };
+
+  const contextValue: ScheduleContextType = {
+    scheduleDay,
+    addDriver,
+    removeDriver,
+    updateDriver,
+    addStop,
+    updateStop,
+    removeStop,
+    assignStop,
+    unassignStop,
+    autoAssignStops,
+    saveSchedule,
+    loadSavedSchedule,
+    importCsvData,
+    isLoading,
+    editStop,
+    duplicateStop,
+    getStopsForDate,
+    syncDriversWithDatabase,
+    syncStopsWithDatabase,
+    updateDriverAvailability,
+  };
+
+  return (
+    <ScheduleContext.Provider value={contextValue}>
+      {children}
+    </ScheduleContext.Provider>
+  );
+};
+
+export const useSchedule = () => {
+  const context = useContext(ScheduleContext);
+  if (context === undefined) {
+    throw new Error('useSchedule must be used within a ScheduleProvider');
+  }
+  return context;
+};
