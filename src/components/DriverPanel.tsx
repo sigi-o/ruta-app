@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
 import { useDateSystem } from '@/context/DateContext';
@@ -164,9 +163,7 @@ const DriverPanel: React.FC = () => {
     }
   };
 
-  // Filter drivers based on availability for the current date
   const availableDrivers = scheduleDay.drivers.filter(driver => {
-    // First check if there's a specific availability record for this date
     const availabilityRecord = scheduleDay.driverAvailability.find(
       a => a.driverId === driver.id && a.date === currentDateString
     );
@@ -175,11 +172,9 @@ const DriverPanel: React.FC = () => {
       return availabilityRecord.isAvailable;
     }
     
-    // If no specific record exists, fall back to the driver's general availability
     return driver.available !== false;
   });
   
-  // Get unavailable drivers for the current date
   const unavailableDrivers = scheduleDay.drivers.filter(driver => {
     const availabilityRecord = scheduleDay.driverAvailability.find(
       a => a.driverId === driver.id && a.date === currentDateString
@@ -192,7 +187,6 @@ const DriverPanel: React.FC = () => {
     return driver.available === false;
   });
 
-  // Check if a driver is available for the current date
   const isDriverAvailable = (driverId: string): boolean => {
     const availabilityRecord = scheduleDay.driverAvailability.find(
       a => a.driverId === driverId && a.date === currentDateString
@@ -211,7 +205,7 @@ const DriverPanel: React.FC = () => {
       <div className="p-4 header-gradient rounded-t-lg flex justify-between items-center">
         <h2 className="text-lg font-medium">Drivers</h2>
         <div className="text-xs text-gray-700 opacity-80">
-          Showing for: {currentDateString}
+          {currentDateString}
         </div>
       </div>
       
@@ -395,7 +389,6 @@ const DriverPanel: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Edit Driver Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
           setIsEditDialogOpen(open);
           if (!open) setSelectedDriver(null);
